@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "LinkedListTweets.h"
+#include "LinkedListUsers.h"
 
 #define MAXINPUTSIZE 6
 #define MAXUSERSIZE 100
@@ -54,6 +55,7 @@ void PrintTweet(struct Tweet *Tweet) {
 int main() {
     char *input, *user, *pswd, *twt, *prompt;
     int flag;
+    LinkedListTweet *TweetList = CreateTweetList();
     
     input = malloc(MAXINPUTSIZE);
     user = malloc(MAXUSERSIZE);
@@ -84,19 +86,17 @@ int main() {
                     if (prompt[0] == '+') {
                         Tweet *NewTweet;
                         TweetNode *NewTweetNode;
-                        LinkedListTweet *TweetList = CreateTweetList();
 
                         printf("New Tweet: ");
 
                         NewTweet = CreateTweet("LOGGED_USER_69");
                         NewTweetNode = CreateTweetNode(NewTweet);
 
-                        /* add tweet to user twt-list*/
+                        /* add tweet to global twt-list */
                         InsertTweetNode(NewTweetNode, TweetList);
 
-                        /* Buscar la manera que esta lista este asociada
-                           al usuario loggeado (weas de tabla de hash)
-                        */
+                        /* add tweet to user twt-list */
+                        /* TO DO */
 
                     } else if (prompt[0] == '@') {
                         printf("user\n");
@@ -170,13 +170,8 @@ void show_user_feed(char *s1) {
     
     /* Ubicar a User en la tabla de hash */
 
-    /* Ver los usuarios a los que sigue e imprimir
-        los tweets de cada uno
-    
-        NOTA: se debe hacer por orden cronologico, comparando
-        las horas de los distintos usuarios (tal vez se tenga que
-        cambiar el formato de hora O agregar otro para hacer menos
-        complicada la comparacion puesto que rn es un string)
+    /* Imprimir tweets de lista de tweets global
+        dependiendo de los usuarios que siga s1
     */
 }
 
