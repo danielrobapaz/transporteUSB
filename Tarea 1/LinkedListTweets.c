@@ -13,39 +13,23 @@
 #include "Tweet.h"
 #include "LinkedListTweet.h"
 
-/*
-* Retorno: Pointer a nueva lista enlazada
-* con una cabeza no nula de largo 0.
-*/
 LinkedListTweet *CreateTweetList() {
     LinkedListTweet *List = malloc(sizeof(struct LinkedListTweet));
-    TweetNode *Head = malloc(sizeof(struct TweetNode));
+    /*TweetNode *Head = malloc(sizeof(struct TweetNode));*/
 
     if (!List) {
         return NULL;
     }
-    if (!Head) {
+    /*if (!Head) {
         return NULL;
-    }
+    }*/
 
-    List->Head = Head;
+    List->Head = NULL;
 
     return List;
 }
 
-void CreateTweet(char *username, char *content, time_t* timestamp) {
-    Tweet *newTweet = malloc(sizeof(struct Tweet));
-
-    if (!newTweet) {
-        exit(1);
-    }
-
-    newTweet->Username = username;
-    newTweet->Tweet = content;
-    newTweet->TimeStamp = timestamp;
-}
-
-void createNoteTweet(struct Tweet *tweet) {
+TweetNode *CreateTweetNode(struct Tweet *tweet) {
     TweetNode *newNode = malloc(sizeof(struct TweetNode));
 
     if (!newNode) {
@@ -54,31 +38,34 @@ void createNoteTweet(struct Tweet *tweet) {
 
     newNode->Tweet = tweet;
     newNode->Next = NULL;
+
+    return newNode;
 }
 
-/*
-* Entrada: Pointer a lista enlazada y a nodo a insertar en la misma.
-* Los nodos son agregados utilizando ordenamiento lineal
-* ascendente dependiendo del elemento "length" de cada uno.
-*/
 void InsertTweetNode(struct TweetNode *Node, struct LinkedListTweet *List) {
+    TweetNode * temp = List->Tail;
+
     if (List->Head == NULL) {
         List->Head = Node;
-    } else {
-        List->Tail->Next = Node;
         List->Tail = Node;
+        List->Head->Next = NULL;
+        List->Head->Prev = NULL;
+    } else {
+        List->Tail = Node;
+        List->Tail->Prev = temp;
+        List->Tail->Next = NULL;
     }
 }
 
-/*
-* Entrada: Pointer a lista enlazada
-*/
 void PrintTweetList(struct LinkedListTweet *List) {
-	TweetNode *Temp = List->Head;
+    TweetNode *CurrentNode = List->Tail;
 
-	do {
-		printf("%s: \"%s\"\n",Temp->Tweet->Username, Temp->Tweet->Tweet);
-		Temp = Temp->Next;
-	}while(Temp->Next != NULL);
+    while (CurrentNode != NULL) {
+        printf("\n@%s: \"%s\"\n",
+            CurrentNode->Tweet->Username, CurrentNode->Tweet->Tweet);
+        printf("(%s)", CurrentNode->Tweet->TimeStamp);
+        printf("\n------------------------\n");
+        CurrentNode = CurrentNode->Prev;
+    }
 	printf("\n");
 }

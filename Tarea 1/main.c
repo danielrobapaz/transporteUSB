@@ -2,10 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "LinkedListTweets.h"
+
 #define MAXINPUTSIZE 6
 #define MAXUSERSIZE 100
 #define MAXPASSWRDSIZE 100
 #define MAXTWTSIZE 100
+#define MAXPROMPTSIZE 6
+#define MAXTWEETSIZE 282
 
 void login_signup_prompt(char *s1, char *s2);
 int login_verify(char *s1, char *s2);
@@ -14,17 +18,54 @@ void show_user_feed(char *s1);
 void show_user_twts(char *s1);
 int user_verify(char *s1);
 
+Tweet *CreateTweet(char *username) {
+    Tweet *newTweet = malloc(sizeof(struct Tweet));
+
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    char *timestamp = asctime(tm);
+
+    char *content = malloc(MAXTWEETSIZE);
+
+    if (!newTweet) {
+        exit(1);
+    }
+
+    fgetc(stdin);
+
+    fgets(content, MAXTWEETSIZE, stdin);
+
+    /* Deletes \n from the end of strings */
+    content[strlen(content) - 1] = 0;
+    timestamp[strlen(timestamp) - 1] = 0;
+
+    newTweet->Username = username;
+    newTweet->Tweet = content;
+    newTweet->TimeStamp = timestamp;
+
+    return newTweet;
+}
+
+void PrintTweet(struct Tweet *Tweet) {
+    printf("\n@%s: \"%s\"\n", Tweet->Username, Tweet->Tweet);
+    printf("(%s)\n", Tweet->TimeStamp);
+}
+
 int main() {
-    char *input, *user, *pswd, *twt;
+    char *input, *user, *pswd, *twt, *prompt;
     int flag;
+    Tweet *NewTweet;
+    TweetNode *NewTweetNode;
+    LinkedListTweet *TweetList = CreateTweetList();
     
     input = malloc(MAXINPUTSIZE);
     user = malloc(MAXUSERSIZE);
     pswd = malloc(MAXPASSWRDSIZE);
     twt = malloc(MAXTWTSIZE);
+    prompt = malloc(MAXPROMPTSIZE);
 
     do {
-        printf("DON'T MISS WHAT'S HAPPENING! LOGIN, SIGNUP OR LEAVE\n");
+        printf("DON'T MISS WHAT'S HAPPENING! LOGIN, SIGNUP OR LEAVE: ");
         scanf("%s", input);
         
         flag = 0;
@@ -37,18 +78,25 @@ int main() {
                 /* show user's feed */
                 do {
                     show_user_feed(user);
-                    printf("WHAT'S HAPPENING?");
+                    printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
                 
-                    /* reads tweet from user */
-                    scanf("%s", twt);
+                    /* reads prompt from user */
+                    scanf("%s", prompt);
 
                     /* verify if tweet is user, text or logout*/
-                    printf("%c \n", twt[0]);
-                    if (twt[0] == '+') {
-                        printf("new twt\n");
+                    /*printf("%c \n", prompt[0]);*/
+                    if (prompt[0] == '+') {
+                        printf("New Tweet: ");
+
+                        NewTweet = CreateTweet("LOGGED_USER_69");
+                        NewTweetNode = CreateTweetNode(NewTweet);
+
+                        InsertTweetNode(NewTweetNode, TweetList);
+
+                        PrintTweetList(TweetList);
                         /* add tweet  to user twt-list*/
 
-                    } else if (twt[0] == '@') {
+                    } else if (prompt[0] == '@') {
                         printf("user\n");
                         /* go to user */
                         /* trunc first char of twt  */
@@ -61,12 +109,12 @@ int main() {
                                 printf("follow\n");
                             }
                         }
-                    } else if (strcmp(twt, "logout") == 0 || strcmp(twt, "LOGOUT") == 0) {
+                    } else if (strcmp(prompt, "logout") == 0 || strcmp(prompt, "LOGOUT") == 0) {
                         printf("logout\n");
                     } else {
-                        printf("twt invalido\n");
+                        printf("prompt invalido\n");
                     }
-                } while (strcmp(twt, "logout") != 0 && strcmp(twt, "LOGOUT") != 0);
+                } while (strcmp(prompt, "logout") != 0 && strcmp(prompt, "LOGOUT") != 0);
             }
         } else if (strcmp(input, "signup") == 0 || strcmp(input, "SIGNUP") == 0) {
             login_signup_prompt(user, pswd);
@@ -116,7 +164,7 @@ int signin_verify(char *s1, char *s2) {
 
 /* shows user feed */
 void show_user_feed(char *s1) {
-    printf("feed\n");
+    printf("TO DO: feed\n");
 }
 
 /* shows user twts */
