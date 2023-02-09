@@ -81,6 +81,8 @@ int main() {
             printf("Invalid option, try again.\n");
         }
     } while(flag == 0);
+
+    return 0;
 }
 
 
