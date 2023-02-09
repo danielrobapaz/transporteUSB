@@ -8,6 +8,6 @@
 typedef struct Tweet {
     char* Tweet;
     char* Username;
-    time_t* TimeStamp;
+    char* TimeStamp;
 }
 Tweet;

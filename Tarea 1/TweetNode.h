@@ -10,6 +10,8 @@
 */
 typedef struct TweetNode {
     struct Tweet *Tweet;
-	struct TweetNode *Next;
+    struct TweetNode *Prev;
+    struct TweetNode *Next;
 }
 TweetNode;
+
