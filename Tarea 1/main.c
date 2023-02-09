@@ -35,28 +35,38 @@ int main() {
             /* verify that the user exists and the password is correct */
             if (login_verify(user, pswd) == 0) {
                 /* show user's feed */
-                show_user_feed(user);
-                printf("WHAT'S HAPPENING?");
+                do {
+                    show_user_feed(user);
+                    printf("WHAT'S HAPPENING?");
                 
-                /* reads tweet from user */
-                scanf("%s", twt);
+                    /* reads tweet from user */
+                    scanf("%s", twt);
 
-                /* verify if tweet is user, text or logout*/
-                if (twt[0] == '+') {
-                    printf("new twt\n");
-                    /* add tweet  to user twt-list*/
+                    /* verify if tweet is user, text or logout*/
+                    printf("%c \n", twt[0]);
+                    if (twt[0] == '+') {
+                        printf("new twt\n");
+                        /* add tweet  to user twt-list*/
 
-                } else if (twt[0] == '@') {
-                    printf("user\n");
-                    /* go to user */
-                    /* trunc first char of twt  */
-                    /* verify that user exist*/
-                    if (user_verify(user)) {
-                        show_user_twts(user);
+                    } else if (twt[0] == '@') {
+                        printf("user\n");
+                        /* go to user */
+                        /* trunc first char of twt  */
+                        /* verify that user exist*/
+                        if (user_verify(user) == 0) {
+                            show_user_twts(user);
+                            scanf("%s", input);
+
+                            if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
+                                printf("follow\n");
+                            }
+                        }
+                    } else if (strcmp(twt, "logout") == 0 || strcmp(twt, "LOGOUT") == 0) {
+                        printf("logout\n");
+                    } else {
+                        printf("twt invalido\n");
                     }
-                } else if (strcmp(twt, "logout") == 0 || strcmp(twt, "LOGOUT") == 0) {
-                    printf("logout");
-                }
+                } while (strcmp(twt, "logout") != 0 && strcmp(twt, "LOGOUT") != 0);
             }
         } else if (strcmp(input, "signup") == 0 || strcmp(input, "SIGNUP") == 0) {
             login_signup_prompt(user, pswd);
