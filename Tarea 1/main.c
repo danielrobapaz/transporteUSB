@@ -53,8 +53,13 @@ int main() {
                         /* go to user */
                         /* trunc first char of twt  */
                         /* verify that user exist*/
-                        if (user_verify(user)) {
+                        if (user_verify(user) == 0) {
                             show_user_twts(user);
+                            scanf("%s", input);
+
+                            if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
+                                printf("follow\n");
+                            }
                         }
                     } else if (strcmp(twt, "logout") == 0 || strcmp(twt, "LOGOUT") == 0) {
                         printf("logout\n");
