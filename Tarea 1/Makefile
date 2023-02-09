@@ -3,17 +3,20 @@ CFLAGS = -ansi -Wall -pedantic
 
 all: Twitter
 
-Twitter: main.o LinkedListTweets.o LinkedListUsers.o
-	$(CC) $(CFLAGS) -o Twitter main.o LinkedListTweets.o LinkedListUsers.o
+Twitter: main.o Tweets_List_Functions.o Hash_Table_Functions.o Hash_List_Functions.o
+	$(CC) $(CFLAGS) -o Twitter main.o Tweets_List_Functions.o Hash_Table_Functions.o Hash_List_Functions.o
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
 
-LinkedListTweets.o: LinkedListTweets.c
-	$(CC) $(CFLAGS) -c LinkedListTweets.c
+Tweets_List_Functions.o: Tweets_List_Functions.c
+	$(CC) $(CFLAGS) -c Tweets_List_Functions.c
 
-LinkedListUsers.o: LinkedListUsers.c
-	$(CC) $(CFLAGS) -c LinkedListUsers.c
+Hash_Table_Functions.o: Hash_Table_Functions.c
+	$(CC) $(CFLAGS) -c Hash_Table_Functions.c
+
+Hash_List_Functions.o: Hash_List_Functions.c
+	$(CC) $(CFLAGS) -c Hash_List_Functions.c
 
 clean:
 	rm *.o Twitter

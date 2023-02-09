@@ -1,9 +1,17 @@
+/**
+ * CI3825: Sistemas de Operación
+ * Daniel Robayo
+ * Santiago Finnamore
+ * Valeria Vera Herrera
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "LinkedListTweets.h"
-#include "LinkedListUsers.h"
+#include "Tweets_List_Functions.h"
+#include "Hash_Table_Functions.h"
+#include "Hash_List_Functions.h"
 
 #define MAXINPUTSIZE 6
 #define MAXUSERSIZE 100
@@ -19,6 +27,12 @@ void show_user_feed(char *s1);
 void show_user_twts(char *s1);
 int user_verify(char *s1);
 
+/**
+ * Función que pide al usuario un input
+ * para crear un tweet. El mismo se almacena
+ * junto con el username del usuario que lo escribió
+ * y la hora y fecha de creación.
+*/
 Tweet *CreateTweet(char *username) {
     Tweet *newTweet = malloc(sizeof(struct Tweet));
 
@@ -47,6 +61,9 @@ Tweet *CreateTweet(char *username) {
     return newTweet;
 }
 
+/**
+ * Función para imprimir tweets.
+*/
 void PrintTweet(struct Tweet *Tweet) {
     printf("\n@%s: \"%s\"\n", Tweet->Username, Tweet->Tweet);
     printf("(%s)\n", Tweet->TimeStamp);
@@ -55,7 +72,7 @@ void PrintTweet(struct Tweet *Tweet) {
 int main() {
     char *input, *user, *pswd, *twt, *prompt;
     int flag;
-    LinkedListTweet *TweetList = CreateTweetList();
+    Tweets_List *TweetList = CreateTweetList();
     
     input = malloc(MAXINPUTSIZE);
     user = malloc(MAXUSERSIZE);
@@ -85,7 +102,7 @@ int main() {
                     /* verify if tweet is user, text or logout*/
                     if (prompt[0] == '+') {
                         Tweet *NewTweet;
-                        TweetNode *NewTweetNode;
+                        Tweet_Node *NewTweetNode;
 
                         printf("New Tweet: ");
 
