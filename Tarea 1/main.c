@@ -54,9 +54,6 @@ void PrintTweet(struct Tweet *Tweet) {
 int main() {
     char *input, *user, *pswd, *twt, *prompt;
     int flag;
-    Tweet *NewTweet;
-    TweetNode *NewTweetNode;
-    LinkedListTweet *TweetList = CreateTweetList();
     
     input = malloc(MAXINPUTSIZE);
     user = malloc(MAXUSERSIZE);
@@ -84,17 +81,22 @@ int main() {
                     scanf("%s", prompt);
 
                     /* verify if tweet is user, text or logout*/
-                    /*printf("%c \n", prompt[0]);*/
                     if (prompt[0] == '+') {
+                        Tweet *NewTweet;
+                        TweetNode *NewTweetNode;
+                        LinkedListTweet *TweetList = CreateTweetList();
+
                         printf("New Tweet: ");
 
                         NewTweet = CreateTweet("LOGGED_USER_69");
                         NewTweetNode = CreateTweetNode(NewTweet);
 
+                        /* add tweet to user twt-list*/
                         InsertTweetNode(NewTweetNode, TweetList);
 
-                        PrintTweetList(TweetList);
-                        /* add tweet  to user twt-list*/
+                        /* Buscar la manera que esta lista este asociada
+                           al usuario loggeado (weas de tabla de hash)
+                        */
 
                     } else if (prompt[0] == '@') {
                         printf("user\n");
@@ -165,6 +167,17 @@ int signin_verify(char *s1, char *s2) {
 /* shows user feed */
 void show_user_feed(char *s1) {
     printf("TO DO: feed\n");
+    
+    /* Ubicar a User en la tabla de hash */
+
+    /* Ver los usuarios a los que sigue e imprimir
+        los tweets de cada uno
+    
+        NOTA: se debe hacer por orden cronologico, comparando
+        las horas de los distintos usuarios (tal vez se tenga que
+        cambiar el formato de hora O agregar otro para hacer menos
+        complicada la comparacion puesto que rn es un string)
+    */
 }
 
 /* shows user twts */

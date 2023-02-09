@@ -15,14 +15,10 @@
 
 LinkedListTweet *CreateTweetList() {
     LinkedListTweet *List = malloc(sizeof(struct LinkedListTweet));
-    /*TweetNode *Head = malloc(sizeof(struct TweetNode));*/
 
     if (!List) {
         return NULL;
     }
-    /*if (!Head) {
-        return NULL;
-    }*/
 
     List->Head = NULL;
 
