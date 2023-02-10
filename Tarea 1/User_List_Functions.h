@@ -12,6 +12,7 @@
 #ifndef __USER_LIST_FUNCTIONS_H_
 #define __USER_LIST_FUNCTIONS_H_
 
+User_List *Create_User_List();
 void User_List_init(User_List *list);
 void add_User_Node(User_List *list, struct User *user);
 int is_in_User_List(User_List *list, char *handle);

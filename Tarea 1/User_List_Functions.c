@@ -14,22 +14,32 @@
 #include "User_List.h"
 #include "Hash_Table.h"
 
-/** Estructuras, procedimientos y funciones relevantes
- * a las listas enlazadas de la tabla de hash.
+/** Estructuras, procedimientos y funciones
+ * relevantes a las listas enlazadas de struct User.
 */
 
-/**
- * OJO: Dado que esta estructura de lista es utilizada para almacenar
- * usuarios, se utiliza también para crear la lista de "following" de
- * cada usuario.
-*/
-
-/** Inicializa la lista enlazada de la tabla de hash apuntada por el
+/** Inicializa la lista de User apuntada por el
  * apuntador list.
 */
 void User_List_init(User_List *list) {
     (*list).Head = NULL;
     (*list).Tail = NULL;
+}
+
+/**
+ * Función para crear e inicializar una
+ * lista enlazada de usuarios.
+*/
+User_List *Create_User_List() {
+    User_List *List = malloc(sizeof(struct User_List));
+
+    if (!List) {
+        return NULL;
+    }
+
+    User_List_init(List);
+
+    return List;
 }
 
 /** Procedimiento que agrega un nodo nuevo a una lista enlazada de tipo 
@@ -52,11 +62,13 @@ void add_User_Node(User_List *list, User *user) {
     if ((*list).Head == NULL) {
         (*list).Head = new_node;
         (*list).Tail = new_node;
+        (*(*list).Head).Next = NULL;
     }
     /*En caso contrario se agrega el nodo al final de la cola*/
     else {
         (*(*list).Tail).Next = new_node;
         (*list).Tail = new_node;
+        (*(*list).Tail).Next = NULL;
     }
 }
 

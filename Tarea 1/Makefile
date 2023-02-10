@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -ansi -Wall -pedantic
+CFLAGS = -ansi -Wall -g -pedantic
 
 all: Twitter
 

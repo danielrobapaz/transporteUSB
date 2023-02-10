@@ -171,7 +171,7 @@ int main() {
     return 0;
 }
 
-/* shows prompt for user and passwrd and reads it from standard input*/
+/* shows prompt for user and password and reads it from standard input*/
 void login_signup_prompt(char *user, char *pwd) {
     printf("USERNAME: ");
     fflush(stdout);
@@ -186,7 +186,7 @@ int login_verify(char *user, char *pwd, Hash_Table *table) {
     /* Check if user exists on hash table */
     if (is_in_hash_table(table, user)) {
         /* Check if password matches*/
-        User *User = hash_search(table, user);      /* VIOLACION DE SEGMENTO ACA */
+        User *User = hash_search(table, user);
         if (strcmp(pwd, User->Password) == 0) {
             return 0;
         } else {
@@ -212,7 +212,7 @@ int signin_verify(char *user, char *pwd, Hash_Table *table) {
 void add_to_table(char *user, char *pwd, Hash_Table *table) {
     User *new_user = malloc(sizeof(User));
     Tweets_List *user_tweets = CreateTweetList();
-    /* User_List *user_following = malloc(sizeof(User_List));*/ /* TO DO */
+    User_List *user_following = Create_User_List();
 
     if (!user) {
         exit(1);
@@ -221,7 +221,7 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
     new_user->Handle = user;
     new_user->Password = pwd; /* TO DO HASHING */
     new_user->Tweets = user_tweets;
-    /*new_user->Following = user_following;*/
+    new_user->Following = user_following;
 
     add_elem(table, new_user);
 }

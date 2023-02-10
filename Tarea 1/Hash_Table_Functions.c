@@ -26,10 +26,10 @@ int hash_function(char *handle) {
     int i; /*variable auxiliar*/
     int sum = 0;
 
-    for (i=0; i < strlen(handle); i++) {
+    for (i = 0; i < strlen(handle); i++) {
         sum += handle[i];
     }
-    return sum%20;
+    return sum % 20;
 }
 
 /**
@@ -68,14 +68,14 @@ int is_in_hash_table(Hash_Table *table, char *handle) {
 }*/
 
 User *hash_search(Hash_Table *table, char *handle) {
-
     int hash_val = hash_function(handle);
     User_List *list = &(table->list_array[hash_val]);
     User_Node *tmp = (*list).Head;
 
-    while (!strcmp((*(*tmp).User).Handle, handle)) {
+    while (strcmp((*(*tmp).User).Handle, handle) && tmp != NULL) {
         tmp = (*tmp).Next;
     }
+
     return (*tmp).User;
 }
 
