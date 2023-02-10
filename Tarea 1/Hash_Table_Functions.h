@@ -20,7 +20,7 @@
 int hash_function(char *handle);
 void add_elem(Hash_Table *table, User *user);
 int is_in_hash_table(Hash_Table *table, char *handle);
-User hash_search(Hash_Table *table, char *handle);
+User *hash_search(Hash_Table *table, char *handle);
 void hash_table_init(Hash_Table *table);
 
 #endif

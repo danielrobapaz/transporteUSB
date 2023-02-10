@@ -37,11 +37,14 @@ int hash_function(char *handle) {
  * elemento a la tabla de Hash.
 */
 void add_elem(Hash_Table *table, User *user) {
-    /*se calcula el hash value del usuatio apuntado por user*/
+    /*se calcula el hash value del usuario apuntado por user*/
     int hash_val = hash_function(user->Handle);
     add_Hash_Node(&(table->list_array)[hash_val], user); /*Se agrega el ususario a la tabla de Hash*/
 }
 
+/**
+ * 
+*/
 int is_in_hash_table(Hash_Table *table, char *handle) {
     int hash_val = hash_function(handle);
     return (is_in_Hash_List(&(table->list_array[hash_val]), handle));
@@ -53,7 +56,7 @@ int is_in_hash_table(Hash_Table *table, char *handle) {
  * Se asume que el usuario existe y está presente en 
  * la lista apuntada por lista.
 */
-User hash_search(Hash_Table *table, char *handle) {
+/*User hash_search(Hash_Table *table, char *handle) {
 
     int hash_val = hash_function(handle);
     Hash_List *list = &(table->list_array[hash_val]);
@@ -62,8 +65,23 @@ User hash_search(Hash_Table *table, char *handle) {
         tmp = (*tmp).Next;
     }
     return (*(*tmp).User);
+}*/
+
+User *hash_search(Hash_Table *table, char *handle) {
+
+    int hash_val = hash_function(handle);
+    Hash_List *list = &(table->list_array[hash_val]);
+    Hash_Node *tmp = (*list).Head;
+
+    while (!strcmp((*(*tmp).User).Handle, handle)) {
+        tmp = (*tmp).Next;
+    }
+    return (*tmp).User;
 }
 
+/**
+ * 
+*/
 void hash_table_init(Hash_Table *table) {
     int i;
     for (i = 0; i < 20; i++) {
