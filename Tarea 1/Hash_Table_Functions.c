@@ -15,7 +15,7 @@
 #include "Hash_Table.h"
 #include "Hash_List_Functions.h"
 
-/* Estructuras, funciones y procedimientos relevantes a la tabla de hash.*/
+/* Estructuras, funciones y procedimientos relevantes a la tabla de hash..*/
 
 /** 
  * Funcion de hash para los Handles. POR AHORA solo suma los
