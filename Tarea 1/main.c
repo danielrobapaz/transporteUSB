@@ -89,34 +89,45 @@ int main() {
         
         flag = 0;
 
-        if (strcmp(input, "login") == 0 || strcmp(input, "LOGIN") == 0) {
+ if (strcmp(input, "login") == 0 || strcmp(input, "LOGIN") == 0) {
             login_signup_prompt(user, pswd);
+            
+            system("clear");
 
             /* verify that the user exists and the password is correct */
             if (login_verify(user, pswd, UsersTable) == 0) {
+                /* Obtener user de la tabla de hash */
+                User *currentUser = hash_search(&UsersTable, user);
+
+                /* Crear lista enlazada para los tweets del usuario loggeado */
+                Tweets_List *UserList = CreateTweetList();
+                currentUser->Tweets = UserList;
+
                 /* show user's feed */
                 do {
+                    system("clear");
                     show_user_feed(user);
                     printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
-                
                     /* reads prompt from user */
                     scanf("%s", prompt);
+                    fflush(stdin);
 
                     /* verify if tweet is user, text or logout*/
                     if (prompt[0] == '+') {
                         Tweet *NewTweet;
                         Tweet_Node *NewTweetNode;
-
+                        
                         printf("New Tweet: ");
-
-                        NewTweet = CreateTweet("LOGGED_USER_69");
+                        system("clear");
+            
+                        NewTweet = CreateTweet(currentUser->Handle);
                         NewTweetNode = CreateTweetNode(NewTweet);
 
                         /* add tweet to global twt-list */
                         InsertTweetNode(NewTweetNode, TweetList);
 
                         /* add tweet to user twt-list */
-                        /* TO DO */
+                        InsertTweetNode(NewTweetNode, UserList);
 
                     } else if (prompt[0] == '@') {
                         printf("user\n");
@@ -179,8 +190,7 @@ void login_signup_prompt(char *s1, char *s2) {
 /* returns 0 if user and password is correct for login */
 int login_verify(char *s1, char *s2, Hash_Table table) {
     /* Check if user exists on hash table */
-    if (is_in_hash_table(&table, s1)) {
-        /* Check if password is correct */
+    /*if (is_in_hash_table(&table, s1)) {
         User *user = hash_search(&table, s1);
         if (strcmp(s2, user->Password) == 0) {
             return 0;
@@ -191,7 +201,7 @@ int login_verify(char *s1, char *s2, Hash_Table table) {
     } else {
         printf("User does not exist. Try again\n");
         return 1;
-    }
+    }*/
     return 0;
 }
 
@@ -201,8 +211,6 @@ int signin_verify(char *s1, char *s2, Hash_Table table) {
     if (is_in_hash_table(&table, s1)) {
         return 1;
     }
-
-    printf("Is %s in table: %d\n", s1, is_in_hash_table(&table, s1));
 
     return 0;
 }
@@ -221,8 +229,6 @@ void add_to_table(char *s1, char *s2, Hash_Table table) {
     user->Following = NULL;
 
     add_elem(&table, user);
-
-    printf("Is %s in table: %d\n", s1, is_in_hash_table(&table, s1));
 }
 
 /* shows user feed */
