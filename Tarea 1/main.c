@@ -21,9 +21,9 @@
 #define MAXTWEETSIZE 282
 
 void login_signup_prompt(char *s1, char *s2);
-int login_verify(char *s1, char *s2, Hash_Table table);
-int signin_verify(char *s1, char *s2, Hash_Table table);
-void add_to_table(char *s1, char *s2, Hash_Table table);
+int login_verify(char *s1, char *s2, Hash_Table *table);
+int signin_verify(char *s1, char *s2, Hash_Table *table);
+void add_to_table(char *s1, char *s2, Hash_Table *table);
 void show_user_feed(char *s1);
 void show_user_twts(char *s1);
 int user_verify(char *s1);
@@ -89,13 +89,13 @@ int main() {
         
         flag = 0;
 
- if (strcmp(input, "login") == 0 || strcmp(input, "LOGIN") == 0) {
+        if (!strcmp(input, "login") || !strcmp(input, "LOGIN")) {
             login_signup_prompt(user, pswd);
             
             system("clear");
 
             /* verify that the user exists and the password is correct */
-            if (login_verify(user, pswd, UsersTable) == 0) {
+            if (login_verify(user, pswd, &UsersTable) == 0) {
                 /* Obtener user de la tabla de hash */
                 User *currentUser = hash_search(&UsersTable, user); /* ME GENERA ERROR EN ESTE MOMENTO */
 
@@ -113,7 +113,7 @@ int main() {
                     fflush(stdin);
 
                     /* verify if tweet is user, text or logout*/
-                    if (prompt[0] == '+') {
+                    if (!strcmp(prompt, "+")) {
                         Tweet *NewTweet;
                         Tweet_Node *NewTweetNode;
                         
@@ -129,7 +129,7 @@ int main() {
                         /* add tweet to user twt-list */
                         InsertTweetNode(NewTweetNode, UserList);
 
-                    } else if (prompt[0] == '@') {
+                    } else if (!strcmp(prompt, "@")) {
                         printf("user\n");
                         /* go to user */
                         /* trunc first char of twt  */
@@ -153,10 +153,10 @@ int main() {
             login_signup_prompt(user, pswd);
             
             /* verify that the user doesn't exist */
-            if (signin_verify(user, pswd, UsersTable) == 0) {
+            if (signin_verify(user, pswd, &UsersTable) == 0) {
                 printf("Successfuly signed in!\n");
                 /* create a new hash entry */
-                add_to_table(user, pswd, UsersTable);
+                add_to_table(user, pswd, &UsersTable);
             } else {
                 printf("Username already in use. Try again\n");
             }
@@ -180,19 +180,22 @@ int main() {
 }
 
 /* shows prompt for user and passwrd and reads it from standard input*/
-void login_signup_prompt(char *s1, char *s2) {
+void login_signup_prompt(char *user, char *pwd) {
     printf("USERNAME: ");
-    scanf("%s", s1);
+    fflush(stdout);
+    scanf("%s", user);
     printf("PASSWORD: ");
-    scanf("%s", s2);
+    fflush(stdout);
+    scanf("%s", pwd);
 }
 
 /* returns 0 if user and password is correct for login */
-int login_verify(char *s1, char *s2, Hash_Table table) {
+int login_verify(char *user, char *pwd, Hash_Table *table) {
     /* Check if user exists on hash table */
-    /*if (is_in_hash_table(&table, s1)) {
-        User *user = hash_search(&table, s1);
-        if (strcmp(s2, user->Password) == 0) {
+    if (is_in_hash_table(table, user)) {
+        User *User = hash_search(table, user);
+        /* Check if password matches*/
+        if (strcmp(pwd, User->Password) == 0) {
             return 0;
         } else {
             printf("Incorrect password. Try again\n");
@@ -201,38 +204,37 @@ int login_verify(char *s1, char *s2, Hash_Table table) {
     } else {
         printf("User does not exist. Try again\n");
         return 1;
-    }*/
+    }
     return 0;
 }
 
-/* returns 0 is user and passwrd is correct for signin */
-int signin_verify(char *s1, char *s2, Hash_Table table) {
+/* returns 1 if the ingested user handle already exists and 0 otherwise */
+int signin_verify(char *user, char *pwd, Hash_Table *table) {
     /*Check if user does not exist on hash table*/
-    if (is_in_hash_table(&table, s1)) {
+    if (is_in_hash_table(table, user)) {
         return 1;
     }
-
     return 0;
 }
 
-void add_to_table(char *s1, char *s2, Hash_Table table) {
+void add_to_table(char *user, char *pwd, Hash_Table *table) {
     /* add user to hash table */
-    User *user = malloc(sizeof(User));
+    User *new_user = malloc(sizeof(User));
 
     if (!user) {
         exit(1);
     }
 
-    user->Handle = s1;
-    user->Password = s2; /* TO DO HASHING */
-    user->Tweets = NULL;
-    user->Following = NULL;
+    new_user->Handle = user;
+    new_user->Password = pwd; /* TO DO HASHING */
+    new_user->Tweets = NULL;
+    new_user->Following = NULL;
 
-    add_elem(&table, user);
+    add_elem(table, new_user);
 }
 
 /* shows user feed */
-void show_user_feed(char *s1) {
+void show_user_feed(char *user) {
     printf("TO DO: feed\n");
     
     /* Ubicar a User en la tabla de hash */
@@ -243,11 +245,11 @@ void show_user_feed(char *s1) {
 }
 
 /* shows user twts */
-void show_user_twts(char *s1) {
+void show_user_twts(char *user) {
     printf("user twts\n");
 }
 
 /* returns 0 if user exist in hash table */
-int user_verify(char *s1) {
+int user_verify(char *user) {
     return 0;
 }
