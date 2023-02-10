@@ -19,6 +19,6 @@ typedef struct User {
     int User_Id;
     char *Password;
     struct Tweets_List *Tweets;
-    struct Hash_List *Following;
+    struct User_List *Following;
 }
 User;

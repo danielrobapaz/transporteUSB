@@ -73,9 +73,9 @@ void PrintTweet(struct Tweet *Tweet) {
 int main() {
     char *input, *user, *pswd, *twt, *prompt;
     int flag;
-    Tweets_List *TweetList = CreateTweetList();
-    Hash_Table UsersTable;
-    hash_table_init(&UsersTable);
+    Tweets_List *Tweet_List = CreateTweetList();
+    Hash_Table Users_Table;
+    hash_table_init(&Users_Table);
     
     input = malloc(MAXINPUTSIZE);
     user = malloc(MAXUSERSIZE);
@@ -91,43 +91,35 @@ int main() {
 
         if (!strcmp(input, "login") || !strcmp(input, "LOGIN")) {
             login_signup_prompt(user, pswd);
-            
-            system("clear");
 
             /* verify that the user exists and the password is correct */
-            if (login_verify(user, pswd, &UsersTable) == 0) {
-                /* Obtener user de la tabla de hash */
-                User *currentUser = hash_search(&UsersTable, user); /* ME GENERA ERROR EN ESTE MOMENTO */
+            if (login_verify(user, pswd, &Users_Table) == 0) {
+                /* Obtener User de la tabla de hash */
+                /*User *logged_user = hash_search(&Users_Table, user);*/
 
-                /* Crear lista enlazada para los tweets del usuario loggeado */
-                Tweets_List *UserList = CreateTweetList();
-                currentUser->Tweets = UserList;
-
-                /* show user's feed */
                 do {
-                    system("clear");
                     show_user_feed(user);
                     printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
+
                     /* reads prompt from user */
                     scanf("%s", prompt);
                     fflush(stdin);
 
                     /* verify if tweet is user, text or logout*/
                     if (!strcmp(prompt, "+")) {
-                        Tweet *NewTweet;
-                        Tweet_Node *NewTweetNode;
+                        Tweet *New_Tweet;
+                        Tweet_Node *New_Tweet_Node;
                         
                         printf("New Tweet: ");
-                        system("clear");
             
-                        NewTweet = CreateTweet(currentUser->Handle);
-                        NewTweetNode = CreateTweetNode(NewTweet);
+                        New_Tweet = CreateTweet("logged_user->Handle");
+                        New_Tweet_Node = CreateTweetNode(New_Tweet);
 
                         /* add tweet to global twt-list */
-                        InsertTweetNode(NewTweetNode, TweetList);
+                        InsertTweetNode(New_Tweet_Node, Tweet_List);
 
                         /* add tweet to user twt-list */
-                        InsertTweetNode(NewTweetNode, UserList);
+                        /*InsertTweetNode(New_TweetNode, logged_user->Tweets);*/
 
                     } else if (!strcmp(prompt, "@")) {
                         printf("user\n");
@@ -153,10 +145,10 @@ int main() {
             login_signup_prompt(user, pswd);
             
             /* verify that the user doesn't exist */
-            if (signin_verify(user, pswd, &UsersTable) == 0) {
+            if (signin_verify(user, pswd, &Users_Table) == 0) {
                 printf("Successfuly signed in!\n");
                 /* create a new hash entry */
-                add_to_table(user, pswd, &UsersTable);
+                add_to_table(user, pswd, &Users_Table);
             } else {
                 printf("Username already in use. Try again\n");
             }
@@ -193,8 +185,8 @@ void login_signup_prompt(char *user, char *pwd) {
 int login_verify(char *user, char *pwd, Hash_Table *table) {
     /* Check if user exists on hash table */
     if (is_in_hash_table(table, user)) {
-        User *User = hash_search(table, user);
         /* Check if password matches*/
+        User *User = hash_search(table, user);      /* VIOLACION DE SEGMENTO ACA */
         if (strcmp(pwd, User->Password) == 0) {
             return 0;
         } else {
@@ -218,8 +210,9 @@ int signin_verify(char *user, char *pwd, Hash_Table *table) {
 }
 
 void add_to_table(char *user, char *pwd, Hash_Table *table) {
-    /* add user to hash table */
     User *new_user = malloc(sizeof(User));
+    Tweets_List *user_tweets = CreateTweetList();
+    /* User_List *user_following = malloc(sizeof(User_List));*/ /* TO DO */
 
     if (!user) {
         exit(1);
@@ -227,8 +220,8 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
 
     new_user->Handle = user;
     new_user->Password = pwd; /* TO DO HASHING */
-    new_user->Tweets = NULL;
-    new_user->Following = NULL;
+    new_user->Tweets = user_tweets;
+    /*new_user->Following = user_following;*/
 
     add_elem(table, new_user);
 }
