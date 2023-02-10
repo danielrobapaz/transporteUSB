@@ -97,7 +97,7 @@ int main() {
             /* verify that the user exists and the password is correct */
             if (login_verify(user, pswd, UsersTable) == 0) {
                 /* Obtener user de la tabla de hash */
-                User *currentUser = hash_search(&UsersTable, user);
+                User *currentUser = hash_search(&UsersTable, user); /* ME GENERA ERROR EN ESTE MOMENTO */
 
                 /* Crear lista enlazada para los tweets del usuario loggeado */
                 Tweets_List *UserList = CreateTweetList();
