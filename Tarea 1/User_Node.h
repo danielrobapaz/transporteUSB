@@ -10,7 +10,7 @@
  * Almacena un puntero a un objeto de tipo usuario y otro puntero
  * que apunta a algun otro nodo de la lista de la que forma parte.
 */
-typedef struct Hash_Node {
+typedef struct User_Node {
     struct User *User;
-    struct Hash_Node *Next;
-} Hash_Node;
+    struct User_Node *Next;
+} User_Node;

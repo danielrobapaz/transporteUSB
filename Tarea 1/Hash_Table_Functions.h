@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "Hash_Node.h"
-#include "Hash_List.h"
+#include "User_Node.h"
+#include "User_List.h"
 #include "Hash_Table.h"
 #include "User.h"
 

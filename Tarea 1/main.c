@@ -11,7 +11,7 @@
 
 #include "Tweets_List_Functions.h"
 #include "Hash_Table_Functions.h"
-#include "Hash_List_Functions.h"
+#include "User_List_Functions.h"
 
 #define MAXINPUTSIZE 6
 #define MAXUSERSIZE 100

@@ -10,8 +10,8 @@
 #include <string.h>
 
 #include "User.h"
-#include "Hash_Node.h"
-#include "Hash_List.h"
+#include "User_Node.h"
+#include "User_List.h"
 #include "Hash_Table.h"
 
 /** Estructuras, procedimientos y funciones relevantes
@@ -27,18 +27,18 @@
 /** Inicializa la lista enlazada de la tabla de hash apuntada por el
  * apuntador list.
 */
-void Hash_List_init(Hash_List *list) {
+void User_List_init(User_List *list) {
     (*list).Head = NULL;
     (*list).Tail = NULL;
 }
 
 /** Procedimiento que agrega un nodo nuevo a una lista enlazada de tipo 
- * Hash_List. El nodo agregado apuntará a un usuario de Handle "Handle" e
+ * User_List. El nodo agregado apuntará a un usuario de Handle "Handle" e
  * identificación id. Este será agregado al final de la cola.
 */
-void add_Hash_Node(Hash_List *list, User *user) {
+void add_User_Node(User_List *list, User *user) {
 
-    Hash_Node *new_node = malloc(sizeof(Hash_Node));
+    User_Node *new_node = malloc(sizeof(User_Node));
 
     if (!new_node) {
         exit(1);
@@ -62,10 +62,10 @@ void add_Hash_Node(Hash_List *list, User *user) {
 
 /** Función que indica si el usuario de Handle "Handle"
  * está presente o no en la
- * lista Hash_List apuntada por list.
+ * lista User_List apuntada por list.
 */
-int is_in_Hash_List(Hash_List *list, char *handle) {
-    Hash_Node *tmp = (*list).Head;
+int is_in_User_List(User_List *list, char *handle) {
+    User_Node *tmp = (*list).Head;
     while (tmp != NULL) {
         if (!strcmp((*(*tmp).User).Handle, handle)) {
             return 1;
@@ -78,8 +78,8 @@ int is_in_Hash_List(Hash_List *list, char *handle) {
 /**
  * Función que imprime los elementos de la Hash List
 */
-void print_Hash_List(Hash_List *list) {
-    Hash_Node *tmp = (*list).Head;
+void print_User_List(User_List *list) {
+    User_Node *tmp = (*list).Head;
     while (tmp != NULL) {
         printf("(%d): %s", (*(*tmp).User).User_Id, (*(*tmp).User).Handle);
         tmp = (*tmp).Next;

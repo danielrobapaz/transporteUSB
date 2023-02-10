@@ -10,7 +10,7 @@
  * Almacena un puntero apuntando al nodo cabeza de la cola y otro
  * apuntando al nodo cola de la misma.
 */
-typedef struct Hash_List {
-    struct Hash_Node *Head;
-    struct Hash_Node *Tail;
-} Hash_List;
+typedef struct User_List {
+    struct User_Node *Head;
+    struct User_Node *Tail;
+} User_List;
