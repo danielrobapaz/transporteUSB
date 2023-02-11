@@ -71,9 +71,8 @@ void PrintTweet(struct Tweet *Tweet) {
 }
 
 int main() {
-    char *input, *user, *pswd, *twt, *prompt;
+    char *input, *user, *pswd, *twt, *prompt, *user_follow;
     int flag;
-    int j;
     Tweets_List *Tweet_List = CreateTweetList();
     User *logged_user, *aux_user;
     Hash_Table Users_Table;
@@ -84,6 +83,7 @@ int main() {
     pswd = malloc(MAXPASSWRDSIZE);
     twt = malloc(MAXTWTSIZE);
     prompt = malloc(MAXPROMPTSIZE);
+    user_follow = malloc(MAXUSERSIZE);
 
     do {
         printf("DON'T MISS WHAT'S HAPPENING! LOGIN, SIGNUP OR LEAVE: ");
@@ -100,6 +100,7 @@ int main() {
                 logged_user = hash_search(&Users_Table, user);
 
                 do {
+                    system("clear");
                     show_user_feed(user, &Users_Table, Tweet_List);
                     printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
 
@@ -114,7 +115,7 @@ int main() {
                         
                         printf("New Tweet: ");
             
-                        New_Tweet = CreateTweet("logged_user->Handle");
+                        New_Tweet = CreateTweet(user);
                         New_Tweet_Node = CreateTweetNode(New_Tweet);
 
                         /* add tweet to global twt-list */
@@ -122,17 +123,16 @@ int main() {
 
                         /* add tweet to user twt-list */
                         InsertTweetNode(New_Tweet_Node, logged_user->Tweets);
-
-                        PrintTweetList(logged_user->Tweets);
                     } else if (!strcmp(prompt, "@")) {
                         /* ask user */
                         printf("User: ");
                         fflush(stdout);
-                        scanf("%s", user);
+                        scanf("%s", user_follow);
 
                         /* verify that user exist*/
-                        if (user_verify(user, &Users_Table) == 1) {
-                            show_user_twts(user, &Users_Table);
+                        if (user_verify(user_follow, &Users_Table) == 1) {
+                            system("clear");
+                            show_user_twts(user_follow, &Users_Table);
 
                             /* wait input from user */
                             do {
@@ -145,7 +145,8 @@ int main() {
                                     aux_user = hash_search(&Users_Table, user);
                                     add_User_Node(logged_user->Following, aux_user);
 
-                                    printf("Now you follow @%s", input);
+                                    printf("Now you follow @%s", aux_user->Handle);
+
                                 } else if (strcmp(input, "leave") == 0 || strcmp(input, "LEAVE") == 0) {
                                     printf("Returning to timeline\n");
                                 } else {
@@ -157,20 +158,23 @@ int main() {
                             printf("User @%s doesn\'t exist", input);
                         }
                     } else if (strcmp(prompt, "logout") == 0 || strcmp(prompt, "LOGOUT") == 0) {
-                        printf("logout\n");
+                        system("clear");
+                        printf("Logout, come back soon.\n");
                     } else {
-                        printf("prompt invalido\n");
+                        system("clear");
+                        printf("Invalid option\n");
                     }
                 } while (strcmp(prompt, "logout") != 0 && strcmp(prompt, "LOGOUT") != 0);
             }
         } else if (strcmp(input, "signup") == 0 || strcmp(input, "SIGNUP") == 0) {
             login_signup_prompt(user, pswd);
-            
+            system("clear");
             /* verify that the user doesn't exist */
             if (signin_verify(user, pswd, &Users_Table) == 0) {
-                printf("Successfuly signed up!\n");
                 /* create a new hash entry */
                 add_to_table(user, pswd, &Users_Table);
+
+                printf("Successfuly signed up!\n");
             } else {
                 printf("Username already in use. Try again\n");
             }
@@ -183,6 +187,7 @@ int main() {
             free(user);
             free(pswd);
             free(twt);
+            free(user_follow);
 
         }  else {
             system("clear");
@@ -243,8 +248,11 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
     new_user->Handle = malloc(strlen(user)+1);
     new_user->Password = malloc(strlen(pwd)+1);
     strcpy(new_user->Handle, user);
-    strcpy(new_user->Password, pwd); /* TO DO HASHING */
+    strcpy(new_user->Password, pwd); /* todo hashing */
     new_user->Tweets = user_tweets;
+
+    add_User_Node(user_following, new_user);
+
     new_user->Following = user_following;
 
     add_elem(table, new_user);
@@ -252,6 +260,9 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
 
 /* shows user feed */
 void show_user_feed(char *user, Hash_Table *table, Tweets_List *list) {
+    printf("Timeline of @%s.\n", user);
+    printf("\n------------------------\n");
+
     User *aux_user;
     Tweet_Node *curr_node_twt_list;
     User_Node *curr_node_follow_list;
@@ -267,7 +278,7 @@ void show_user_feed(char *user, Hash_Table *table, Tweets_List *list) {
         /* user of the curr twt */
         username = curr_node_twt_list->Tweet->Username;
 
-        curr_node_follow_list = user_follow_list->Tail; 
+        curr_node_follow_list = user_follow_list->Tail;
         while (curr_node_follow_list != NULL) {
             if (strcmp(username, curr_node_follow_list->User->Handle) == 0 ||  strcmp(username, user) == 0) {
                 printf("\n@%s: \"%s\"\n",
@@ -278,7 +289,7 @@ void show_user_feed(char *user, Hash_Table *table, Tweets_List *list) {
             curr_node_follow_list = curr_node_follow_list->Next;
         }
 
-        curr_node_twt_list = curr_node_twt_list->Next;    
+        curr_node_twt_list = curr_node_twt_list->Prev;    
     }
 }
 
@@ -287,6 +298,8 @@ void show_user_twts(char *user, Hash_Table *table) {
     /* buscamos el usuario */
     User *aux_user;
     aux_user = hash_search(table, user);
+
+    printf("Feed of @%s", user);
 
     /* mostramos la lisa de usuario*/
     PrintTweetList(aux_user->Tweets);

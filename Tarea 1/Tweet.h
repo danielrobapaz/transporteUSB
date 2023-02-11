@@ -11,9 +11,9 @@
  * otro al tweet per sé y otro al timestamp.
 */
 typedef struct Tweet {
-    char* Tweet;
-    char* Username;
+    char *Tweet;
+    char *Username;
     int User_id;
-    char* TimeStamp;
+    char *TimeStamp;
 }
 Tweet;
