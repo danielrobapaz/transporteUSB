@@ -13,7 +13,7 @@
 #include "Hash_Table_Functions.h"
 #include "User_List_Functions.h"
 
-#define MAXINPUTSIZE 6
+#define MAXINPUTSIZE 40
 #define MAXUSERSIZE 100
 #define MAXPASSWRDSIZE 100
 #define MAXTWTSIZE 100
@@ -75,7 +75,7 @@ int main() {
     int flag;
     int j;
     Tweets_List *Tweet_List = CreateTweetList();
-    User *logged_user;
+    User *logged_user, *aux_user;
     Hash_Table Users_Table;
     hash_table_init(&Users_Table);
     
@@ -134,12 +134,25 @@ int main() {
                         if (user_verify(user, &Users_Table) == 1) {
                             show_user_twts(user, &Users_Table);
 
-                            printf("follow or leave: ");
-                            fflush(stdout);
-                            scanf("%s", input);
-                            if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
-                                printf("follow\n");
-                            }
+                            /* wait input from user */
+                            do {
+                                printf("follow or leave: ");
+                                fflush(stdout);
+                                scanf("%s", input);
+
+                                if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
+                                    /* add user to following list */
+                                    aux_user = hash_search(&Users_Table, user);
+                                    add_User_Node(logged_user->Following, aux_user);
+
+                                    printf("Now you follow @%s", input);
+                                } else if (strcmp(input, "leave") == 0 || strcmp(input, "LEAVE") == 0) {
+                                    printf("Returning to timeline\n");
+                                } else {
+                                    printf("Invalid option.");
+                                }
+                            } while(strcmp(input, "leave") != 0 && strcmp(input, "LEAVE") != 0 && strcmp(input, "follow") != 0 && strcmp(input, "FOLLOW") != 0);
+
                         } else {
                             printf("User @%s doesn\'t exist", input);
                         }
