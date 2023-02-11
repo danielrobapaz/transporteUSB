@@ -24,7 +24,7 @@ void login_signup_prompt(char *s1, char *s2);
 int login_verify(char *s1, char *s2, Hash_Table *table);
 int signin_verify(char *s1, char *s2, Hash_Table *table);
 void add_to_table(char *s1, char *s2, Hash_Table *table);
-void show_user_feed(char *s1);
+void show_user_feed(char *s1, Hash_Table *table, Tweets_List *list);
 void show_user_twts(char *s1, Hash_Table *table);
 int user_verify(char *s1, Hash_Table *table);
 
@@ -100,7 +100,7 @@ int main() {
                 logged_user = hash_search(&Users_Table, user);
 
                 do {
-                    show_user_feed(user);
+                    show_user_feed(user, &Users_Table, Tweet_List);
                     printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
 
                     /* reads prompt from user */
@@ -149,7 +149,7 @@ int main() {
                                 } else if (strcmp(input, "leave") == 0 || strcmp(input, "LEAVE") == 0) {
                                     printf("Returning to timeline\n");
                                 } else {
-                                    printf("Invalid option.");
+                                    printf("Invalid option.\n");
                                 }
                             } while(strcmp(input, "leave") != 0 && strcmp(input, "LEAVE") != 0 && strcmp(input, "follow") != 0 && strcmp(input, "FOLLOW") != 0);
 
@@ -251,14 +251,35 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
 }
 
 /* shows user feed */
-void show_user_feed(char *user) {
-    printf("TO DO: feed\n");
-    
-    /* Ubicar a User en la tabla de hash */
+void show_user_feed(char *user, Hash_Table *table, Tweets_List *list) {
+    User *aux_user;
+    Tweet_Node *curr_node_twt_list;
+    User_Node *curr_node_follow_list;
+    User_List *user_follow_list;
+    char *username;
 
-    /* Imprimir tweets de lista de tweets global
-        dependiendo de los usuarios que siga s1
-    */
+    aux_user = hash_search(table, user);
+    user_follow_list = aux_user->Following;
+    curr_node_twt_list = list->Tail;
+
+    /* find every tweet such that tweet.username is in user.followgin */
+    while (curr_node_twt_list != NULL) {
+        /* user of the curr twt */
+        username = curr_node_twt_list->Tweet->Username;
+
+        curr_node_follow_list = user_follow_list->Tail; 
+        while (curr_node_follow_list != NULL) {
+            if (strcmp(username, curr_node_follow_list->User->Handle) == 0 ||  strcmp(username, user) == 0) {
+                printf("\n@%s: \"%s\"\n",
+                curr_node_twt_list->Tweet->Username, curr_node_twt_list->Tweet->Tweet);
+                printf("(%s)", curr_node_twt_list->Tweet->TimeStamp);
+                printf("\n------------------------\n");
+            }
+            curr_node_follow_list = curr_node_follow_list->Next;
+        }
+
+        curr_node_twt_list = curr_node_twt_list->Next;    
+    }
 }
 
 /* shows user twts */
