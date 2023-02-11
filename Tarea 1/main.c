@@ -25,8 +25,8 @@ int login_verify(char *s1, char *s2, Hash_Table *table);
 int signin_verify(char *s1, char *s2, Hash_Table *table);
 void add_to_table(char *s1, char *s2, Hash_Table *table);
 void show_user_feed(char *s1);
-void show_user_twts(char *s1);
-int user_verify(char *s1);
+void show_user_twts(char *s1, Hash_Table *table);
+int user_verify(char *s1, Hash_Table *table);
 
 /**
  * Función que pide al usuario un input
@@ -75,6 +75,7 @@ int main() {
     int flag;
     int j;
     Tweets_List *Tweet_List = CreateTweetList();
+    User *logged_user;
     Hash_Table Users_Table;
     hash_table_init(&Users_Table);
     
@@ -96,7 +97,7 @@ int main() {
             /* verify that the user exists and the password is correct */
             if (login_verify(user, pswd, &Users_Table) == 0) {
                 /* Obtener User de la tabla de hash */
-                /*User *logged_user = hash_search(&Users_Table, user);*/
+                logged_user = hash_search(&Users_Table, user);
 
                 do {
                     show_user_feed(user);
@@ -120,20 +121,27 @@ int main() {
                         InsertTweetNode(New_Tweet_Node, Tweet_List);
 
                         /* add tweet to user twt-list */
-                        /*InsertTweetNode(New_TweetNode, logged_user->Tweets);*/
+                        InsertTweetNode(New_Tweet_Node, logged_user->Tweets);
 
+                        PrintTweetList(logged_user->Tweets);
                     } else if (!strcmp(prompt, "@")) {
-                        printf("user\n");
-                        /* go to user */
-                        /* trunc first char of twt  */
-                        /* verify that user exist*/
-                        if (user_verify(user) == 0) {
-                            show_user_twts(user);
-                            scanf("%s", input);
+                        /* ask user */
+                        printf("User: ");
+                        fflush(stdout);
+                        scanf("%s", user);
 
+                        /* verify that user exist*/
+                        if (user_verify(user, &Users_Table) == 1) {
+                            show_user_twts(user, &Users_Table);
+
+                            printf("follow or leave: ");
+                            fflush(stdout);
+                            scanf("%s", input);
                             if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
                                 printf("follow\n");
                             }
+                        } else {
+                            printf("User @%s doesn\'t exist", input);
                         }
                     } else if (strcmp(prompt, "logout") == 0 || strcmp(prompt, "LOGOUT") == 0) {
                         printf("logout\n");
@@ -188,8 +196,6 @@ int login_verify(char *user, char *pwd, Hash_Table *table) {
     if (is_in_hash_table(table, user)) {
         /* Check if password matches*/
         User *User = hash_search(table, user);
-        printf("pwd is: %s\n", pwd);
-        printf("stored password is: %s\n", User->Password);
         if (!strcmp(pwd, User->Password)) {
             return 0;
         } else {
@@ -243,11 +249,17 @@ void show_user_feed(char *user) {
 }
 
 /* shows user twts */
-void show_user_twts(char *user) {
-    printf("user twts\n");
+void show_user_twts(char *user, Hash_Table *table) {
+    /* buscamos el usuario */
+    User *aux_user;
+    aux_user = hash_search(table, user);
+
+    /* mostramos la lisa de usuario*/
+    PrintTweetList(aux_user->Tweets);
 }
 
-/* returns 0 if user exist in hash table */
-int user_verify(char *user) {
-    return 0;
+/* returns 1 if user exist in hash table */
+int user_verify(char *user, Hash_Table *table) {
+    /* checks if user is in hash table */
+    return is_in_hash_table(table, user);
 }

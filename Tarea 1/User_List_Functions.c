@@ -75,6 +75,7 @@ void add_User_Node(User_List *list, User *user) {
 /** Función que indica si el usuario de Handle "Handle"
  * está presente o no en la
  * lista User_List apuntada por list.
+ * Returns 1 if user exist, 0 otherwise.
 */
 int is_in_User_List(User_List *list, char *handle) {
     User_Node *tmp = (*list).Head;

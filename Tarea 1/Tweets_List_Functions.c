@@ -55,7 +55,7 @@ Tweet_Node *CreateTweetNode(struct Tweet *tweet) {
  * Los mismos se insertan al final de la cola.
 */
 void InsertTweetNode(struct Tweet_Node *Node, struct Tweets_List *List) {
-    Tweet_Node * temp = List->Tail;
+    Tweet_Node *temp = List->Tail;
 
     if (List->Head == NULL) {
         List->Head = Node;
