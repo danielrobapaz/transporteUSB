@@ -50,30 +50,14 @@ int is_in_hash_table(Hash_Table *table, char *handle) {
     return (is_in_User_List(&(table->list_array[hash_val]), handle));
 }
 
-/**
- * Funcion que busca al usuario de nombre handle
- * y retorna el objeto de tipo User que le corresponde.
- * Se asume que el usuario existe y está presente en 
- * la lista apuntada por lista.
-*/
-/*User hash_search(Hash_Table *table, char *handle) {
-
-    int hash_val = hash_function(handle);
-    User_List *list = &(table->list_array[hash_val]);
-    User_Node *tmp = (*list).Head;
-    while (!strcmp((*(*tmp).User).Handle, handle)) {
-        tmp = (*tmp).Next;
-    }
-    return (*(*tmp).User);
-}*/
 
 User *hash_search(Hash_Table *table, char *handle) {
     int hash_val = hash_function(handle);
     User_List *list = &(table->list_array[hash_val]);
-    User_Node *tmp = (*list).Head;
+    User_Node *tmp = list->Head;
 
-    while (strcmp((*(*tmp).User).Handle, handle) && tmp != NULL) {
-        tmp = (*tmp).Next;
+    while (strcmp((*tmp->User).Handle, handle)) {
+        tmp = tmp->Next;
     }
 
     return (*tmp).User;

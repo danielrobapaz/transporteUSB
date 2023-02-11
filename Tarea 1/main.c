@@ -73,6 +73,7 @@ void PrintTweet(struct Tweet *Tweet) {
 int main() {
     char *input, *user, *pswd, *twt, *prompt;
     int flag;
+    int j;
     Tweets_List *Tweet_List = CreateTweetList();
     Hash_Table Users_Table;
     hash_table_init(&Users_Table);
@@ -146,7 +147,7 @@ int main() {
             
             /* verify that the user doesn't exist */
             if (signin_verify(user, pswd, &Users_Table) == 0) {
-                printf("Successfuly signed in!\n");
+                printf("Successfuly signed up!\n");
                 /* create a new hash entry */
                 add_to_table(user, pswd, &Users_Table);
             } else {
@@ -187,7 +188,9 @@ int login_verify(char *user, char *pwd, Hash_Table *table) {
     if (is_in_hash_table(table, user)) {
         /* Check if password matches*/
         User *User = hash_search(table, user);
-        if (strcmp(pwd, User->Password) == 0) {
+        printf("pwd is: %s\n", pwd);
+        printf("stored password is: %s\n", User->Password);
+        if (!strcmp(pwd, User->Password)) {
             return 0;
         } else {
             printf("Incorrect password. Try again\n");
@@ -218,8 +221,10 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
         exit(1);
     }
 
-    new_user->Handle = user;
-    new_user->Password = pwd; /* TO DO HASHING */
+    new_user->Handle = malloc(strlen(user)+1);
+    new_user->Password = malloc(strlen(pwd)+1);
+    strcpy(new_user->Handle, user);
+    strcpy(new_user->Password, pwd); /* TO DO HASHING */
     new_user->Tweets = user_tweets;
     new_user->Following = user_following;
 
