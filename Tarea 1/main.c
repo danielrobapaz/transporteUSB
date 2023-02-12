@@ -20,61 +20,23 @@
 #define MAXPROMPTSIZE 6
 #define MAXTWEETSIZE 282
 
-void login_signup_prompt(char *s1, char *s2);
-int login_verify(char *s1, char *s2, Hash_Table *table);
-int signin_verify(char *s1, char *s2, Hash_Table *table);
-void add_to_table(char *s1, char *s2, Hash_Table *table);
-void show_user_feed(char *s1, Hash_Table *table, Tweets_List *list);
-void show_user_twts(char *s1, Hash_Table *table);
-int user_verify(char *s1, Hash_Table *table);
-
-/**
- * Función que pide al usuario un input
- * para crear un tweet. El mismo se almacena
- * junto con el username del usuario que lo escribió
- * y la hora y fecha de creación.
-*/
-Tweet *CreateTweet(char *username) {
-    Tweet *newTweet = malloc(sizeof(struct Tweet));
-
-    time_t t = time(NULL);
-    struct tm *tm = localtime(&t);
-    char *timestamp = asctime(tm);
-
-    char *content = malloc(MAXTWEETSIZE);
-
-    if (!newTweet) {
-        exit(1);
-    }
-
-    fgetc(stdin);
-
-    fgets(content, MAXTWEETSIZE, stdin);
-
-    /* Deletes \n from the end of strings */
-    content[strlen(content) - 1] = 0;
-    timestamp[strlen(timestamp) - 1] = 0;
-
-    newTweet->Username = username;
-    newTweet->Tweet = content;
-    newTweet->TimeStamp = timestamp;
-
-    return newTweet;
-}
-
-/**
- * Función para imprimir tweets.
-*/
-void PrintTweet(struct Tweet *Tweet) {
-    printf("\n@%s: \"%s\"\n", Tweet->Username, Tweet->Tweet);
-    printf("(%s)\n", Tweet->TimeStamp);
-}
+void login_signup_prompt(char *user, char *pwd);
+int login_verify(char *user, char *pwd, Hash_Table *table);
+int signin_verify(char *user, char *pwd, Hash_Table *table);
+void add_to_table(char *user, char *pwd, Hash_Table *table);
+void show_user_feed(User *user, Tweets_List *list);
+void show_user_twts(char *user, Hash_Table *table);
+int user_verify(char *user, Hash_Table *table);
+void add_tweet(User *user, Tweets_List *twt_list);
+void follow_user(User *user, Hash_Table *table);
+Tweet *create_tweet(char *username);
+void print_tweet(Tweet *Tweet);
 
 int main() {
-    char *input, *user, *pswd, *twt, *prompt, *user_follow;
+    char *input, *user, *pswd, *twt, *prompt;
     int flag;
     Tweets_List *Tweet_List = CreateTweetList();
-    User *logged_user, *aux_user;
+    User *logged_user;
     Hash_Table Users_Table;
     hash_table_init(&Users_Table);
     
@@ -83,7 +45,6 @@ int main() {
     pswd = malloc(MAXPASSWRDSIZE);
     twt = malloc(MAXTWTSIZE);
     prompt = malloc(MAXPROMPTSIZE);
-    user_follow = malloc(MAXUSERSIZE);
 
     do {
         printf("DON'T MISS WHAT'S HAPPENING! LOGIN, SIGNUP OR LEAVE: ");
@@ -101,62 +62,20 @@ int main() {
 
                 do {
                     system("clear");
-                    show_user_feed(user, &Users_Table, Tweet_List);
+                    show_user_feed(logged_user, Tweet_List);
                     printf("\nWHAT'S HAPPENING? (+, @ or logout): ");
 
                     /* reads prompt from user */
                     scanf("%s", prompt);
-                    fflush(stdin);
+                    fflush(stdout);
 
                     /* verify if tweet is user, text or logout*/
                     if (!strcmp(prompt, "+")) {
-                        Tweet *New_Tweet;
-                        Tweet_Node *New_Tweet_Node;
+                        add_tweet(logged_user, Tweet_List);
                         
-                        printf("New Tweet: ");
-            
-                        New_Tweet = CreateTweet(user);
-                        New_Tweet_Node = CreateTweetNode(New_Tweet);
-
-                        /* add tweet to global twt-list */
-                        InsertTweetNode(New_Tweet_Node, Tweet_List);
-
-                        /* add tweet to user twt-list */
-                        InsertTweetNode(New_Tweet_Node, logged_user->Tweets);
                     } else if (!strcmp(prompt, "@")) {
-                        /* ask user */
-                        printf("User: ");
-                        fflush(stdout);
-                        scanf("%s", user_follow);
+                        follow_user(logged_user, &Users_Table);
 
-                        /* verify that user exist*/
-                        if (user_verify(user_follow, &Users_Table) == 1) {
-                            system("clear");
-                            show_user_twts(user_follow, &Users_Table);
-
-                            /* wait input from user */
-                            do {
-                                printf("follow or leave: ");
-                                fflush(stdout);
-                                scanf("%s", input);
-
-                                if (strcmp(input, "follow") == 0 || strcmp(input, "FOLLOW") == 0) {
-                                    /* add user to following list */
-                                    aux_user = hash_search(&Users_Table, user);
-                                    add_User_Node(logged_user->Following, aux_user);
-
-                                    printf("Now you follow @%s", aux_user->Handle);
-
-                                } else if (strcmp(input, "leave") == 0 || strcmp(input, "LEAVE") == 0) {
-                                    printf("Returning to timeline\n");
-                                } else {
-                                    printf("Invalid option.\n");
-                                }
-                            } while(strcmp(input, "leave") != 0 && strcmp(input, "LEAVE") != 0 && strcmp(input, "follow") != 0 && strcmp(input, "FOLLOW") != 0);
-
-                        } else {
-                            printf("User @%s doesn\'t exist", input);
-                        }
                     } else if (strcmp(prompt, "logout") == 0 || strcmp(prompt, "LOGOUT") == 0) {
                         system("clear");
                         printf("Logout, come back soon.\n");
@@ -187,7 +106,6 @@ int main() {
             free(user);
             free(pswd);
             free(twt);
-            free(user_follow);
 
         }  else {
             system("clear");
@@ -259,28 +177,26 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
 }
 
 /* shows user feed */
-void show_user_feed(char *user, Hash_Table *table, Tweets_List *list) {
-    printf("Timeline of @%s.\n", user);
+void show_user_feed(User *user, Tweets_List *list) {
+    printf("Timeline of @%s.\n", user->Handle);
     printf("\n------------------------\n");
 
-    User *aux_user;
     Tweet_Node *curr_node_twt_list;
     User_Node *curr_node_follow_list;
     User_List *user_follow_list;
     char *username;
 
-    aux_user = hash_search(table, user);
-    user_follow_list = aux_user->Following;
+    user_follow_list = user->Following;
     curr_node_twt_list = list->Tail;
 
     /* find every tweet such that tweet.username is in user.followgin */
     while (curr_node_twt_list != NULL) {
-        /* user of the curr twt */
+        /* username of the curr twt */
         username = curr_node_twt_list->Tweet->Username;
 
         curr_node_follow_list = user_follow_list->Tail;
         while (curr_node_follow_list != NULL) {
-            if (strcmp(username, curr_node_follow_list->User->Handle) == 0 ||  strcmp(username, user) == 0) {
+            if (strcmp(username, curr_node_follow_list->User->Handle) == 0) {
                 printf("\n@%s: \"%s\"\n",
                 curr_node_twt_list->Tweet->Username, curr_node_twt_list->Tweet->Tweet);
                 printf("(%s)", curr_node_twt_list->Tweet->TimeStamp);
@@ -309,4 +225,124 @@ void show_user_twts(char *user, Hash_Table *table) {
 int user_verify(char *user, Hash_Table *table) {
     /* checks if user is in hash table */
     return is_in_hash_table(table, user);
+}
+
+
+/*  add a new tweet to user tweet list.
+
+    args: *user -> user to add a new tweet in its list
+          *twt_list -> list that stores every twt.
+
+    returns:
+        none
+*/
+void add_tweet(User *user, Tweets_List *twt_list) {
+    Tweet *new_tweet;
+    Tweet_Node *new_tweet_node;
+
+    printf("New Tweet: ");
+
+    new_tweet = create_tweet(user->Handle);
+    new_tweet_node = CreateTweetNode(new_tweet);
+
+    InsertTweetNode(new_tweet_node, twt_list);
+    InsertTweetNode(new_tweet_node, user->Tweets);
+}
+
+/*  add a new follower to user.following list
+
+    args:
+        *user -> user to add a new following user.
+        *table -> table that stores every user
+
+    returns:
+        none
+
+*/
+void follow_user(User *user, Hash_Table *table) {
+    char *user_to_find, *option;
+    int flag;
+
+    user_to_find = malloc(MAXUSERSIZE);
+    option = malloc(MAXINPUTSIZE);
+
+    printf("User: ");
+    fflush(stdout);
+    scanf("%s", user_to_find);
+
+    /* verify that user exist */
+    if (user_verify(user_to_find, table) == 1) {
+        system("clear");
+
+        show_user_twts(user_to_find, table);
+
+        do {
+            printf("follow or leave: ");
+            fflush(stdout);
+            scanf("%s", option);
+
+            flag = 0;
+
+            if (strcmp(option, "follow") == 0 || strcmp(option, "FOLLOW") == 0) {
+                add_User_Node(user->Following, hash_search(table, user_to_find));
+                printf("Now you follow @%s", user_to_find);
+                flag = 1;
+
+            } else if (strcmp(option, "leave") == 0 || strcmp(option, "LEAVE") == 0) {
+                printf("Returning to timeline.\n");
+                flag = 1;
+
+            } else {
+                printf("Invalid option.\n");
+            }
+        } while(flag != 1);
+    } else {
+        printf("User @%s doesn\'t exist", user_to_find);
+    }
+
+    free(user_to_find);
+    free(option);
+}
+
+/**
+ * Función que pide al usuario un input
+ * para crear un tweet. El mismo se almacena
+ * junto con el username del usuario que lo escribió
+ * y la hora y fecha de creación.
+*/
+Tweet *create_tweet(char *username) {
+    Tweet *newTweet = malloc(sizeof(struct Tweet));
+
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    char *timestamp = asctime(tm);
+
+    char *content = malloc(MAXTWEETSIZE);
+
+    if (!newTweet) {
+        exit(1);
+    }
+
+    fgetc(stdin);
+
+    fgets(content, MAXTWEETSIZE, stdin);
+
+    /* Deletes \n from the end of strings */
+    content[strlen(content) - 1] = 0;
+    timestamp[strlen(timestamp) - 1] = 0;
+
+    newTweet->Username = username;
+    newTweet->Tweet = content;
+    newTweet->TimeStamp = timestamp;
+
+    return newTweet;
+}
+
+
+/**
+ * Función para imprimir tweets.
+*/
+void print_tweet(Tweet *tweet) {
+    printf("\n@%s: \"%s\"\n", tweet->Username, tweet->Tweet);
+    printf("(%s)\n", tweet->TimeStamp);
 }
