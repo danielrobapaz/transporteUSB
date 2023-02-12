@@ -333,7 +333,8 @@ Tweet *create_tweet(char *username) {
 
     newTweet->Username = username;
     newTweet->Tweet = content;
-    newTweet->TimeStamp = timestamp;
+    newTweet->TimeStamp = malloc(strlen(timestamp)+1);
+    strcpy(newTweet->TimeStamp, timestamp);
 
     return newTweet;
 }
