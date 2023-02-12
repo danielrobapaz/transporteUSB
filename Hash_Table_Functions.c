@@ -56,7 +56,7 @@ User *hash_search(Hash_Table *table, char *handle) {
     User_List *list = &(table->list_array[hash_val]);
     User_Node *tmp = list->Head;
 
-    while (strcmp((*tmp->User).Handle, handle)) {
+    while (strcmp((tmp->User)->Handle, handle)) {
         tmp = tmp->Next;
     }
 

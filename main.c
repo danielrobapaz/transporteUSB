@@ -111,30 +111,6 @@ int main() {
             system("clear");
             printf("Invalid option, try again.\n");
         }
-    /*Dump de todo lo que está en el sistema tras cada iteración*/
-    int j = 0;
-    User_Node *usr_nav;
-    User_Node *usr_nav_inner;
-    
-    for (j = 0; j < 20; j++) {
-        usr_nav = Users_Table.list_array[j].Head;
-        while (usr_nav != NULL) {
-            /*Se imprimen todos los datos del usuario*/
-            printf("\nUsuario: %s\n", (usr_nav->User)->Handle);
-            printf("Tweets publicados:\n");
-            PrintTweetList(usr_nav->User->Tweets);
-            printf("Usuarios que sigue: \n");
-            usr_nav_inner = usr_nav->User->Following->Head;
-            while (usr_nav_inner != NULL) {
-                printf(" - %s\n", usr_nav_inner->User->Handle);
-                usr_nav_inner = usr_nav_inner->Next;
-            }
-            usr_nav = usr_nav->Next;
-        }
-    }
-    printf("\n");
-    printf("Lista global de Tweets:\n");
-    PrintTweetList(Tweet_List); 
     } while(flag == 0);
 
     return 0;
@@ -218,7 +194,7 @@ void show_user_feed(User *user, Tweets_List *list) {
         /* username of the curr twt */
         username = curr_node_twt_list->Tweet->Username;
 
-        curr_node_follow_list = user_follow_list->Tail;
+        curr_node_follow_list = user_follow_list->Head;
         while (curr_node_follow_list != NULL) {
             if (strcmp(username, curr_node_follow_list->User->Handle) == 0) {
                 printf("\n@%s: \"%s\"\n",
@@ -311,7 +287,7 @@ void follow_user(User *user, Hash_Table *table) {
 
             if (strcmp(option, "follow") == 0 || strcmp(option, "FOLLOW") == 0) {
                 add_User_Node(user->Following, hash_search(table, user_to_find));
-                printf("Now you follow @%s", user_to_find);
+                printf("Now you follow @%s!\n", user_to_find);
                 flag = 1;
 
             } else if (strcmp(option, "leave") == 0 || strcmp(option, "LEAVE") == 0) {
@@ -323,7 +299,7 @@ void follow_user(User *user, Hash_Table *table) {
             }
         } while(flag != 1);
     } else {
-        printf("User @%s doesn\'t exist", user_to_find);
+        printf("User @%s doesn\'t exist\n", user_to_find);
     }
 
     free(user_to_find);
