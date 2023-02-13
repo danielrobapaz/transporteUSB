@@ -259,7 +259,6 @@ void add_tweet(User *user, Tweets_List *twt_list) {
 
     returns:
         none
-
 */
 void follow_user(User *user, Hash_Table *table) {
     char *user_to_find, *option;
@@ -286,8 +285,13 @@ void follow_user(User *user, Hash_Table *table) {
             flag = 0;
 
             if (strcmp(option, "follow") == 0 || strcmp(option, "FOLLOW") == 0) {
-                add_User_Node(user->Following, hash_search(table, user_to_find));
-                printf("Now you follow @%s!\n", user_to_find);
+                if (is_in_User_List(user->Following, user_to_find) == 0) {
+                    add_User_Node(user->Following, hash_search(table, user_to_find));
+                    printf("Now you follow @%s!\n", user_to_find);
+ 
+                } else {
+                    printf("You already follow @%s.\n", user_to_find);
+                }
                 flag = 1;
 
             } else if (strcmp(option, "leave") == 0 || strcmp(option, "LEAVE") == 0) {
