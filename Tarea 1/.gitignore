@@ -1,2 +1,5 @@
 # ignore all .o files
 *.o
+
+# ignore execution program
+Twitter
