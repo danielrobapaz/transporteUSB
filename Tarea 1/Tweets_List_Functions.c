@@ -26,6 +26,7 @@ Tweets_List *CreateTweetList() {
     }
 
     List->Head = NULL;
+    List->Tail = NULL;
 
     return List;
 }

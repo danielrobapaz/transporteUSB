@@ -194,7 +194,7 @@ void show_user_feed(User *user, Tweets_List *list) {
         /* username of the curr twt */
         username = curr_node_twt_list->Tweet->Username;
 
-        curr_node_follow_list = user_follow_list->Tail;
+        curr_node_follow_list = user_follow_list->Head;
         while (curr_node_follow_list != NULL) {
             if (strcmp(username, curr_node_follow_list->User->Handle) == 0) {
                 printf("\n@%s: \"%s\"\n",
@@ -238,15 +238,17 @@ int user_verify(char *user, Hash_Table *table) {
 */
 void add_tweet(User *user, Tweets_List *twt_list) {
     Tweet *new_tweet;
-    Tweet_Node *new_tweet_node;
+    Tweet_Node *new_tweet_node_global;
+    Tweet_Node *new_tweet_node_user;
 
     printf("New Tweet: ");
 
     new_tweet = create_tweet(user->Handle);
-    new_tweet_node = CreateTweetNode(new_tweet);
+    new_tweet_node_global = CreateTweetNode(new_tweet);
+    new_tweet_node_user = CreateTweetNode(new_tweet);
 
-    InsertTweetNode(new_tweet_node, twt_list);
-    InsertTweetNode(new_tweet_node, user->Tweets);
+    InsertTweetNode(new_tweet_node_global, twt_list);
+    InsertTweetNode(new_tweet_node_user, user->Tweets);
 }
 
 /*  add a new follower to user.following list
@@ -285,7 +287,7 @@ void follow_user(User *user, Hash_Table *table) {
 
             if (strcmp(option, "follow") == 0 || strcmp(option, "FOLLOW") == 0) {
                 add_User_Node(user->Following, hash_search(table, user_to_find));
-                printf("Now you follow @%s", user_to_find);
+                printf("Now you follow @%s!\n", user_to_find);
                 flag = 1;
 
             } else if (strcmp(option, "leave") == 0 || strcmp(option, "LEAVE") == 0) {
@@ -297,7 +299,7 @@ void follow_user(User *user, Hash_Table *table) {
             }
         } while(flag != 1);
     } else {
-        printf("User @%s doesn\'t exist", user_to_find);
+        printf("User @%s doesn\'t exist\n", user_to_find);
     }
 
     free(user_to_find);
