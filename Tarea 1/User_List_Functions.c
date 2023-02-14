@@ -89,12 +89,13 @@ int is_in_User_List(User_List *list, char *handle) {
 }
 
 /**
- * Función que imprime los elementos de la Hash List
+ * Función que imprime los elementos de una lista
 */
 void print_User_List(User_List *list) {
-    User_Node *tmp = (*list).Head;
+    User_Node *tmp = (*(*list).Head).Next;
     while (tmp != NULL) {
-        printf("(%d): %s", (*(*tmp).User).User_Id, (*(*tmp).User).Handle);
+        printf("@%s: %s\n", (*(*tmp).User).Handle, (*(*tmp).User).Desc);
+        printf("------------------------\n");
         tmp = (*tmp).Next;
     }
     printf("\n");
