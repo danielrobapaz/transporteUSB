@@ -25,7 +25,7 @@ void login_signup_prompt(char *user, char *pwd);
 void desc_signup_prompt(User *user);
 int login_verify(char *user, char *pwd, Hash_Table *table);
 int signin_verify(char *user, char *pwd, Hash_Table *table);
-void add_to_table(char *user, char *pwd, Hash_Table *table);
+void add_to_table(char *user, char *pwd, char *desc, Hash_Table *table);
 void show_user_feed(User *user, Tweets_List *list);
 void show_user_twts(char *user, Hash_Table *table);
 int user_verify(char *user, Hash_Table *table);
@@ -37,7 +37,7 @@ void find_user_mentions(char *user, Tweets_List *tweets);
 char *hash_password(char *password);
 
 int main() {
-    char *input, *user, *pswd, *twt, *prompt;
+    char *input, *user, *pswd, *twt, *prompt, *desc_prompt;
     int flag;
     Tweets_List *Tweet_List = CreateTweetList();
     User *logged_user;
@@ -49,7 +49,7 @@ int main() {
     pswd = malloc(MAXPASSWRDSIZE);
     twt = malloc(MAXTWTSIZE);
     prompt = malloc(MAXPROMPTSIZE);
-
+    desc_prompt = malloc(MAXDESCSIZE);
     do {
         printf("DON'T MISS WHAT'S HAPPENING! LOGIN, SIGNUP OR LEAVE: ");
         scanf("%s", input);
@@ -60,19 +60,18 @@ int main() {
             login_signup_prompt(user, pswd);
 
             /* verify that the user exists and the password is correct */
-            if (!login_verify(user, pswd, &Users_Table)) {
+            if (!login_verify(user, hash_password(pswd), &Users_Table)) {
                 /* Obtener User de la tabla de hash */
                 logged_user = hash_search(&Users_Table, user);
 
-                do {
-                    /* --- COMENTADO PORQUE CON ESTO NO FUNCIONA LO DE MENTIONS ---*/
-                    /*system("clear");*/   
+                do {  
+                    system("clear");
                     show_user_feed(logged_user, Tweet_List);
                     printf("\nWHAT'S HAPPENING? (+, @, mentions or logout): ");
+                    fflush(stdout);
 
                     /* reads prompt from user */
                     scanf("%s", prompt);
-                    fflush(stdout);
 
                     /* verify if tweet is user, text or logout*/
                     if (!strcmp(prompt, "+")) {
@@ -81,8 +80,14 @@ int main() {
                     } else if (!strcmp(prompt, "@")) {
                         follow_user(logged_user, &Users_Table);
 
-                    } else if (!strcmp(prompt, "mentions") || !strcmp(prompt, "MENTIONS")) {
+                    } else if (!strcmp(prompt, "mentions") || !strcmp(prompt, "MENTIONS")) { 
+                        system("clear");
                         find_user_mentions(logged_user->Handle, Tweet_List);
+                        /*Quick-Fix para el clear que no dejaba ver mentions, se pide al usuario que presione un boton antes de borrar*/
+                        printf("Presione cualquier botón para continuar...");
+                        fflush(stdout);
+                        system("read -sn 1");
+
 
                     } else if (!strcmp(prompt, "logout") || !strcmp(prompt, "LOGOUT")) {
                         system("clear");
@@ -94,27 +99,26 @@ int main() {
                 } while (strcmp(prompt, "logout") && strcmp(prompt, "LOGOUT"));
             }
         } else if (!strcmp(input, "signup") || !strcmp(input, "SIGNUP")) {
-            /*char *prompt_desc = malloc(MAXPROMPTSIZE);*/
 
             login_signup_prompt(user, pswd);
-
-            /* ---- COMENTADO PORQUE LA FUNCIÓN DA SEG. FAULT ----*/
-            /*desc_signup_prompt(logged_user);*/
-
-            /*printf("Want to add a profile description? \n");
-            printf("Enter 'y' for yes or any other key for no: ");
-            scanf("%c", prompt_desc);
-            if (!strcmp(prompt_desc, "y") || !strcmp(prompt_desc, "Y")) {
-                desc_signup_prompt(logged_user);
-            } else {
-                logged_user->Desc = "";
-            }*/
-
             system("clear");
             /* verify that the user doesn't exist */
             if (!signin_verify(user, pswd, &Users_Table)) {
+                /*Prmopt user for description*/
+                printf("Do you want to add a description to your profile? [Y/N]: ");
+                fflush(stdout);
+                scanf("%s", prompt);
+                if (!strcmp(prompt, "y") || !strcmp(prompt, "Y")) {
+                    printf("Type in your description (max. 140 char): ");
+                    fflush(stdout);
+                    getc(stdin); /*Eliminando \n residual en buffer de input*/
+                    fgets(desc_prompt, MAXDESCSIZE - 2, stdin);
+                }
+                else {
+                    strcpy(desc_prompt, "No description.");
+                }
                 /* create a new hash entry */
-                add_to_table(user, pswd, &Users_Table);
+                add_to_table(user, pswd, desc_prompt, &Users_Table);
 
                 printf("Successfuly signed up!\n");
             } else {
@@ -149,6 +153,7 @@ void login_signup_prompt(char *user, char *pwd) {
     scanf("%s", pwd);
 }
 
+/*Creo que esta funcion ya no hace falta pero la dejo porsia*/
 void desc_signup_prompt(User *user) {
     char *user_desc = malloc(MAXDESCSIZE);
 
@@ -163,7 +168,6 @@ void desc_signup_prompt(User *user) {
     user_desc[strlen(user_desc) - 1] = 0;
 
     user->Desc = malloc(strlen(user_desc) + 1);
-    /*user->Desc = user_desc;*/
     strcpy(user->Desc, user_desc);
 }
 
@@ -173,7 +177,6 @@ int login_verify(char *user, char *pwd, Hash_Table *table) {
     if (is_in_hash_table(table, user)) {
         /* Check if password matches*/
         User *User = hash_search(table, user);
-        /* if (!strcmp(hash_password(pwd), User->Password)) */
         if (!strcmp(pwd, User->Password)) {
             return 0;
         } else {
@@ -196,7 +199,7 @@ int signin_verify(char *user, char *pwd, Hash_Table *table) {
     return 0;
 }
 
-void add_to_table(char *user, char *pwd, Hash_Table *table) {
+void add_to_table(char *user, char *pwd, char *desc, Hash_Table *table) {
     User *new_user = malloc(sizeof(User));
     Tweets_List *user_tweets = CreateTweetList();
     User_List *user_following = Create_User_List();
@@ -209,9 +212,8 @@ void add_to_table(char *user, char *pwd, Hash_Table *table) {
     new_user->Password = malloc(strlen(pwd)+1);
     new_user->Desc = malloc(MAXDESCSIZE);
     strcpy(new_user->Handle, user);
-    strcpy(new_user->Password, pwd); /* to do hashing */
-    /*strcpy(new_user->Password, hash_password(pwd));*/
-    strcpy(new_user->Desc, "No description");
+    strcpy(new_user->Password, hash_password(pwd));
+    strcpy(new_user->Desc, desc);
     new_user->Tweets = user_tweets;
 
     add_User_Node(user_following, new_user);
@@ -340,9 +342,9 @@ void follow_user(User *user, Hash_Table *table) {
 
             if (!strcmp(option, "follow") || !strcmp(option, "FOLLOW")) {
                 if (strcmp(user_to_find, user->Handle)) {
-                    if (is_in_User_List(user->Following, user_to_find)) {
-                    add_User_Node(user->Following, hash_search(table, user_to_find));
-                    printf("Now you follow @%s!\n", user_to_find);
+                    if (!is_in_User_List(user->Following, user_to_find)) {
+                        add_User_Node(user->Following, hash_search(table, user_to_find));
+                        printf("Now you follow @%s!\n", user_to_find);
                     } else {
                         printf("You already follow @%s.\n", user_to_find);
                     }
@@ -417,10 +419,10 @@ void find_user_mentions(char *user, Tweets_List *tweets) {
 
     Tweet_Node *CurrentNode = tweets->Tail;
     char mention[100];
-    int flag = 0;
+    int flag_mentions = 0;
 
     strncpy(mention, "@", 2);
-    strncat(mention, user, strlen(user) + 1);
+    strncat(mention, user, strlen(user) + strlen(mention)+ 1);
 
     printf("Mentions of @%s:\n", user);
 
@@ -428,15 +430,15 @@ void find_user_mentions(char *user, Tweets_List *tweets) {
         if (strstr(CurrentNode->Tweet->Tweet, mention) != NULL) {
             printf("\n@%s: \"%s\"\n",
             CurrentNode->Tweet->Username, CurrentNode->Tweet->Tweet);
-            printf("(%s)", CurrentNode->Tweet->TimeStamp);
-            printf("\n------------------------\n");
-            flag = 1;
+            printf("(%s)\n", CurrentNode->Tweet->TimeStamp);
+            printf("------------------------\n");
+            flag_mentions = 1;
         }
         CurrentNode = CurrentNode->Prev;
     }
 	printf("\n");
 
-    if (!flag) {
+    if (!flag_mentions) {
         printf("No mentions found.\n");
         printf("\n------------------------\n\n");
     }
@@ -453,13 +455,11 @@ void find_user_mentions(char *user, Tweets_List *tweets) {
 */
 char *hash_password(char *password) {
     int length = strlen(password);
-    char *hashed = malloc(length);
+    char *hashed = malloc(length+1);
     int i = 0;
 
-    while (i < length) {
-        int ascii_value = (int) password[i];
-        hashed[i] = (char) ((ascii_value % length) + 33);
-        i++;
+    for (i = 0; i < length; i++) {
+        hashed[i] = password[i]%length + 33;
     }
 
     return(hashed);
