@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "Sch_List.h"
 #include "Schedule.h"
 
 #ifndef __SCH_LIST_FUNCTIONS_H_
