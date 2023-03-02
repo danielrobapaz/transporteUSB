@@ -12,5 +12,5 @@
 */
 typedef struct Sch_List {
     struct Sch_Node *Head;
-    struct Sch *Tail;
+    struct Sch_Node *Tail;
 } Sch_List;

@@ -5,12 +5,10 @@
  * Valeria Vera Herrera
 */
 
-#include "Sch_List.h"
-
 /**
  * Estructura para almacenar servicios
 */
 typedef struct Service {
     char *Route;
-    struct Sch_List Sch_List;
+    struct Sch_List *Schedule;
 } Service;

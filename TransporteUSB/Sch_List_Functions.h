@@ -15,8 +15,8 @@
 #ifndef __SCH_LIST_FUNCTIONS_H_
 #define __SCH_LIST_FUNCTIONS_H_
 
-void Schedule_List_init(Sch_List *list);
-Sch_List *Create_Schedule_List();
-void add_Node(Sch_List *list, Schedule *Schedule);
+void Sch_List_init(Sch_List *list);
+Sch_List *Create_Sch_List();
+void add_Sch_Node(Sch_List *list, Schedule *Schedule);
 
 #endif

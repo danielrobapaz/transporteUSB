@@ -2,11 +2,13 @@
  * CI3825: Sistemas de Operación
 */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "Service_List_Functions.h"
+#include "Sch_List_Functions.h"
 
 /**
  * Busca el nombre de un archivo dependiendo de los flags.
@@ -27,7 +29,7 @@ char* Filename(char* type, int argc, char **argv) {
 
     if (!found) {
         if (!strcmp("-s", type)) {
-            printf("ERROR");
+            printf("ERROR: No se encontró archivo de servicio. \n");
             exit(1);
         } else if (!strcmp("-c", type)) {
             return "carga.csv";
@@ -40,41 +42,15 @@ char* Filename(char* type, int argc, char **argv) {
 }
 
 /**
- * Corta una sección de un string con ayuda de strncpy.
- * 
- * Entrada:
- * - line: cadena de caracteres a ser cortada.
- * - i: posición de la cadena desde donde se
- *      cortará.
- * - n: cantidad de caracteres a cortar.
- * 
- * Salida:
- *      Apuntador a cadena de caracteres.
- */ 
-char* cutLine(char* line, int i, int n) {
-    char* str = malloc((n + 1) * sizeof(char));
-
-    if (!str) {
-        printf("Error: No se pudo reservar memoria para el arreglo.");
-        exit(1);
-    }
-
-    strncpy(str, &line[i], n);    
-    str[n] = 0;
-
-    if (!str) {
-        exit(1);
-    }
-    
-    return str;
-}
-
-/**
  * Read each line of the filename, adds the schedules to a
  * list which then will be added to the service list as well
 */
 void addService(char filename[], struct Service_List* list) {
     FILE *fp;
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
     fp = fopen(filename, "r");
 
     if (!fp) {
@@ -82,16 +58,29 @@ void addService(char filename[], struct Service_List* list) {
         exit(1);
     }
 
-    /*while(fgets(linea, sizeof(linea) + 1, fp)) {
-        char* Route = cutLine(linea, 0, 3);
-        char* schedules = cutLine(linea, 3, HASTA EL FINAL DE LA LINEA);
+    /* Read file line by line */
+    while ((read = getline(&line, &len, fp)) != -1) {
+        Sch_List *Horarios = Create_Sch_List();
+        char* route = strtok(line, " ");
 
-        // guardar schedules en Service
-        // guardar Service en Nodo
-        // insertar nodo a la lista
+        /* Obtener los horarios y agregarlos a
+        una lista enlazada de horarios*/
+        printf("route: %s\n", route);
 
-        i++;
-    }*/
+        while(line != NULL) {
+            if (strcmp(route, line)) {
+                char* hour = strtok(NULL, ":");
+                char* min = strtok(NULL, "(");
+                char* cap = strtok(NULL, ")");
+                
+                printf("hour: %s\n", hour);
+                printf("min: %s\n", min);
+                printf("cap: %s\n\n", cap);
+            }
+            line = strtok(NULL, " ");
+        }
+        
+    }
 
     fclose(fp);
 }
