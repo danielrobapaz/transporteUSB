@@ -9,6 +9,7 @@
 
 #include "Service_List_Functions.h"
 #include "Sch_List_Functions.h"
+#include "Sch_Node.h"
 
 /**
  * Busca el nombre de un archivo dependiendo de los flags.
@@ -45,7 +46,7 @@ char* Filename(char* type, int argc, char **argv) {
  * Read each line of the filename, adds the schedules to a
  * list which then will be added to the service list as well
 */
-void addService(char filename[], struct Service_List* list) {
+void addService(char filename[], struct Service_List* serv_list) {
     FILE *fp;
     char* line = NULL;
     size_t len = 0;
@@ -60,26 +61,29 @@ void addService(char filename[], struct Service_List* list) {
 
     /* Read file line by line */
     while ((read = getline(&line, &len, fp)) != -1) {
-        Sch_List *Horarios = Create_Sch_List();
-        char* route = strtok(line, " ");
+        Sch_List *horarios = Create_Sch_List();
 
-        /* Obtener los horarios y agregarlos a
-        una lista enlazada de horarios*/
-        printf("route: %s\n", route);
+        char* route = strtok(line, " ");
 
         while(line != NULL) {
             if (strcmp(route, line)) {
-                char* hour = strtok(NULL, ":");
+                char* hour = strtok(line, ":");
                 char* min = strtok(NULL, "(");
-                char* cap = strtok(NULL, ")");
-                
-                printf("hour: %s\n", hour);
-                printf("min: %s\n", min);
-                printf("cap: %s\n\n", cap);
+                char* cap = strtok(NULL, ") ");
+
+                if (hour && min && cap) {
+                    Schedule *sch = create_Schedule(atoi(hour), atoi(min), atoi(cap));
+                    add_Sch_Node(horarios, sch);
+                }
             }
-            line = strtok(NULL, " ");
+            line = strtok(NULL, "");
+
+            /* Agregar lista enlazada de horarios a la lista de servicios*/
+            if (!line) {
+                Service *serv = create_Service(route, horarios);
+                add_Service_Node(serv_list, serv);
+            }
         }
-        
     }
 
     fclose(fp);

@@ -40,11 +40,26 @@ Sch_List *Create_Sch_List() {
     return Sch_List;
 }
 
+Schedule *create_Schedule(int hour, int min, int cap) {
+    Schedule *new_Sch = malloc(sizeof(Schedule));
+
+    if (!new_Sch) {
+        printf("Error: No se pudo reservar memoria.\n");
+        exit(1);
+    }
+
+    new_Sch->Hour = hour;
+    new_Sch->Min = min;
+    new_Sch->Capacity = cap;
+
+    return new_Sch;
+}
+
 /** Procedimiento que agrega un nodo nuevo a una Sch_Lista enlazada de tipo 
  * Sch_List. El nodo agregado apuntará a un usuario de Handle "Handle" e
  * identificación id. Este será agregado al final de la cola.
 */
-void add_Sch_Node(Sch_List *Sch_List, Schedule *Schedule) {
+void add_Sch_Node(Sch_List *Sch_List, Schedule *sch) {
 
     struct Sch_Node *new_node = malloc(sizeof(Sch_Node));
 
@@ -52,7 +67,7 @@ void add_Sch_Node(Sch_List *Sch_List, Schedule *Schedule) {
         exit(1);
     }
 
-    /*new_node->Service = Service;*/
+    /*new_node->Schedule = sch;*/
     new_node->Next = NULL;
 
     /** Si la Sch_Lista está vacía se inicializa la cabeza

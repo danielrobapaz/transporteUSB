@@ -17,6 +17,7 @@
 
 void Sch_List_init(Sch_List *list);
 Sch_List *Create_Sch_List();
-void add_Sch_Node(Sch_List *list, Schedule *Schedule);
+Schedule *create_Schedule(int hour, int min, int cap);
+void add_Sch_Node(Sch_List *list, Schedule *sch);
 
 #endif

@@ -12,6 +12,7 @@
 #include "Service.h"
 #include "Service_Node.h"
 #include "Service_List.h"
+#include "Sch_List.h"
 
 /** Estructuras, procedimientos y funciones
  * relevantes a las Service_listas enlazadas de struct Service.
@@ -38,6 +39,20 @@ Service_List *Create_Service_List() {
     Service_List_init(Service_List);
 
     return Service_List;
+}
+
+Service *create_Service(char *route, Sch_List *sch) {
+    Service *new_Service = malloc(sizeof(Service));
+
+    if (!new_Service) {
+        printf("Error: No se pudo reservar memoria.\n");
+        exit(1);
+    }
+
+    new_Service->Route = route;
+    new_Service->Schedule = sch;
+
+    return new_Service;
 }
 
 /** Procedimiento que agrega un nodo nuevo a una Service_lista enlazada de tipo 
