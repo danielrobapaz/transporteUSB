@@ -13,7 +13,7 @@
 #include "Sch_Node.h"
 #include "Carga.h"
 
-#define MAX_HOURS 100
+#define MAX_HOURS 8
 #define MAX_LEN 100
 
 /**
