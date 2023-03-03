@@ -9,8 +9,9 @@
  * Estructura para almacenar horarios
 */
 typedef struct Schedule {
-    int Hour;
-    int Min;
+    /*int Hour;
+    int Min;*/
+    time_t Time;
     int Capacity;
 }
 Schedule;

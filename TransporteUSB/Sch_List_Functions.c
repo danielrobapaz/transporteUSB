@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "Schedule.h"
 #include "Sch_Node.h"
@@ -42,14 +43,22 @@ Sch_List *Create_Sch_List() {
 
 Schedule *create_Schedule(int hour, int min, int cap) {
     Schedule *new_Sch = malloc(sizeof(Schedule));
+    struct tm *date;
+    time_t now;
+
+    time(&now);
+    date = localtime(&now);
 
     if (!new_Sch) {
         printf("Error: No se pudo reservar memoria.\n");
         exit(1);
     }
 
-    new_Sch->Hour = hour;
-    new_Sch->Min = min;
+    /*new_Sch->Hour = hour;
+    new_Sch->Min = min;*/
+    date->tm_hour = hour;
+    date->tm_min = min;
+    new_Sch->Time = mktime(date);
     new_Sch->Capacity = cap;
 
     return new_Sch;
@@ -67,20 +76,20 @@ void add_Sch_Node(Sch_List *Sch_List, Schedule *sch) {
         exit(1);
     }
 
-    /*new_node->Schedule = sch;*/
+    new_node->Schedule = sch;
     new_node->Next = NULL;
 
     /** Si la Sch_Lista está vacía se inicializa la cabeza
     * y la cola con el nodo ingresado*/
-    /*if ((*Sch_List).Head == NULL) {
+    if ((*Sch_List).Head == NULL) {
         (*Sch_List).Head = new_node;
         (*Sch_List).Tail = new_node;
         (*(*Sch_List).Head).Next = NULL;
-    }*/
+    }
     /*En caso contrario se agrega el nodo al final de la cola*/
-    /*else {
+    else {
         (*(*Sch_List).Tail).Next = new_node;
         (*Sch_List).Tail = new_node;
         (*(*Sch_List).Tail).Next = NULL;
-    }*/
+    }
 }
