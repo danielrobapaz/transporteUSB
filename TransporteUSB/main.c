@@ -97,10 +97,10 @@ void add_Service(char filename[], struct Service_List* serv_list) {
 /**
  * Takes string and creates a new time_t struct
 */
-time_t *create_Hour(char* time) {
+time_t *create_Hour(char* input_time) {
     time_t *new_Hour = malloc(sizeof(time_t));
     struct tm *date;
-    time_t now;
+    time_t now = time(NULL);
     date = localtime(&now);
 
     if (!new_Hour) {
@@ -108,7 +108,7 @@ time_t *create_Hour(char* time) {
         exit(1);
     }
 
-    date->tm_hour = atoi(strtok(time, ":"));
+    date->tm_hour = atoi(strtok(input_time, ":"));
     date->tm_min = atoi(strtok(NULL, ","));
     *new_Hour = mktime(date);
 
@@ -118,27 +118,22 @@ time_t *create_Hour(char* time) {
 /**
  * Takes values and creates a new Carga struct
 */
-Carga *create_Carga(char* cod, char* nombre, char* recorr, int cap0,
-    int cap1, int cap2, int cap3, int cap4, int cap5, int cap6, int cap7) {
+Carga *create_Carga(char* cod, char* nombre, char* recorr, int capacidades[MAX_HOURS]) {
 
     Carga *new_Carga = malloc(sizeof(Carga));
+    int i;
 
     if (!new_Carga) {
         printf("Error: No se pudo reservar memoria.\n");
         exit(1);
     }
 
-    new_Carga->Cod = cod;
-    new_Carga->Nombre = nombre;
+    strcpy(new_Carga->Cod, cod);
+    strcpy(new_Carga->Nombre, nombre);
     new_Carga->Recorr = create_Hour(recorr);
-    new_Carga->Cap0 = cap0;
-    new_Carga->Cap1 = cap1;
-    new_Carga->Cap2 = cap2;
-    new_Carga->Cap3 = cap3;
-    new_Carga->Cap4 = cap4;
-    new_Carga->Cap5 = cap5;
-    new_Carga->Cap6 = cap6;
-    new_Carga->Cap7 = cap7;
+    for(i = 0; i < MAX_HOURS; i++) {
+        new_Carga->capacidades[i] = capacidades[i];
+    }
 
     return new_Carga;
 }
@@ -149,12 +144,13 @@ Carga *create_Carga(char* cod, char* nombre, char* recorr, int cap0,
  * the data on the rest of the lines will be added to an array
  * of Carga structs
 */
-void add_Carga(char filename[], struct Carga *carga, int *horarios) {
+void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
     FILE *fp;
-    char* line = NULL;
+    char *line = NULL;
     size_t len = 0;
     ssize_t read;
     int i = 0;
+    int j;
 
     fp = fopen(filename, "r");
 
@@ -167,12 +163,12 @@ void add_Carga(char filename[], struct Carga *carga, int *horarios) {
     while ((read = getline(&line, &len, fp)) != -1) {
         if (i == 0) {
             /* Guardar horas en horarios[]*/
-            int j = 0;
+            j = 0;
             char* hour = strtok(line, ",");
+            int k = 0;
             while (j < 10) {
-                int k = 0;
                 hour = strtok(NULL, ",");
-                if (j >= 3) {
+                if (j >= 2) {
                     horarios[k] = atoi(hour);
                     k++;
                 }
@@ -180,24 +176,15 @@ void add_Carga(char filename[], struct Carga *carga, int *horarios) {
             }
         } else {
             /* Guardar en carga[] */
-            /*char *cod = strtok(line, ",");
+            char *cod = strtok(line, ",");
             char *nombre = strtok(NULL, ",");
             char *recorr = strtok(NULL, ",");
-            int cap0 = atoi(strtok(NULL, ","));
-            int cap1 = atoi(strtok(NULL, ","));
-            int cap2 = atoi(strtok(NULL, ","));
-            int cap3 = atoi(strtok(NULL, ","));
-            int cap4 = atoi(strtok(NULL, ","));
-            int cap5 = atoi(strtok(NULL, ","));
-            int cap6 = atoi(strtok(NULL, ","));
-            int cap7 = atoi(strtok(NULL, ","));
-
-            Carga *flt = create_Carga(cod, nombre, recorr, cap0,
-            cap1, cap2, cap3, cap4, cap5, cap6, cap7);
-
-            carga[i - 1] = flt;*/
+            int cap[MAX_HOURS];
+            for (j = 0; j < MAX_HOURS; j++) {
+                cap[j] = atoi(strtok(NULL, ","));
+            }
+            carga[i-1] = create_Carga(cod, nombre, recorr, cap);
         }
-
         i++;
     }
 
@@ -208,14 +195,36 @@ int main(int argc, char **argv) {
     /* Obtener nombre de los archivos*/
     char* Servicio_Filename = Get_Filename("-s", argc, argv);
     char* Carga_Filename = Get_Filename("-c", argc, argv);
-    /*float tiempo = atof(Get_Filename("-t", argc, argv));*/
+    float tiempo = atof(Get_Filename("-t", argc, argv));
+    int i;
+    int j;
+    int k = 0;
 
     int Horarios[MAX_HOURS];
-    Carga Carga_Al_Sistema[MAX_LEN];
+    Carga *Carga_Al_Sistema[MAX_LEN];
     Service_List *Service_List = Create_Service_List();
 
     add_Service(Servicio_Filename, Service_List);
     add_Carga(Carga_Filename, Carga_Al_Sistema, Horarios);
+
+    /*Impresion de las cargas y los servicios para verificar funcionamiento*/
+    printf("Impresión de horarios: \n");
+    for (i = 0; i < MAX_HOURS; i++) {
+        printf("h%d: %d\n", i, Horarios[i]);
+    }
+    printf("Impresión de carga al sistema:\n");
+    while (Carga_Al_Sistema[k] != NULL) {
+        printf("Código de la parada: %s\n", Carga_Al_Sistema[k]->Cod);
+        printf("Nombre de la parada: %s\n", Carga_Al_Sistema[k]->Nombre);
+        printf("Ingreso de estudiantes: ");
+        fflush(stdout);
+        for (j = 0; j < MAX_HOURS-1; j++) {
+            printf("%d, ", Carga_Al_Sistema[k]->capacidades[j]);
+            fflush(stdout);
+        }
+        printf("%d\n", Carga_Al_Sistema[k]->capacidades[MAX_HOURS-1]);
+        k++;
+    }
 
     return 0;
 }

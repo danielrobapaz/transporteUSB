@@ -9,15 +9,8 @@
  * Estructura para almacenar cargas
 */
 typedef struct Carga {
-    char *Cod;
-    char *Nombre;
+    char Cod[4];
+    char Nombre[50];
     time_t *Recorr;
-    int Cap0;
-    int Cap1;
-    int Cap2;
-    int Cap3;
-    int Cap4;
-    int Cap5;
-    int Cap6;
-    int Cap7;
+    int capacidades[8];
 } Carga;
