@@ -3,18 +3,25 @@
 */
 
 #define _GNU_SOURCE
+#define READ_END 0
+#define WRITE_END 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <semaphore.h>
 
 #include "Service_List_Functions.h"
 #include "Sch_List_Functions.h"
 #include "Sch_Node.h"
+#include "Service_Node.h"
 #include "Carga.h"
 
 #define MAX_HOURS 8
 #define MAX_LEN 100
+sem_t pipe_sem;
 
 /**
  * Busca el nombre de un archivo dependiendo de los flags.
@@ -197,33 +204,64 @@ int main(int argc, char **argv) {
     char* Carga_Filename = Get_Filename("-c", argc, argv);
     float tiempo = atof(Get_Filename("-t", argc, argv));
     int i;
-    int j;
-    int k = 0;
+    int route_count;
+    Service_Node *my_route;     /*Apuntador al objeto servicio que le corresponde a cada proceso*/
+    Service_Node *navigator;    /*Variable auxiliar para desplazarse por la lista de servicios*/
 
     int Horarios[MAX_HOURS];
     Carga *Carga_Al_Sistema[MAX_LEN];
-    Service_List *Service_List = Create_Service_List();
+    Service_List *Servicio = Create_Service_List();
 
-    add_Service(Servicio_Filename, Service_List);
+    add_Service(Servicio_Filename, Servicio);
     add_Carga(Carga_Filename, Carga_Al_Sistema, Horarios);
 
-    /*Impresion de las cargas y los servicios para verificar funcionamiento*/
-    printf("Impresión de horarios: \n");
-    for (i = 0; i < MAX_HOURS; i++) {
-        printf("h%d: %d\n", i, Horarios[i]);
+    /*Se cuenta la cantidad de rutas en el sitema para determinar el número de
+    hijos a crear*/
+
+    navigator = Servicio->Head;
+    route_count = 0;
+    while (navigator != NULL) {
+        route_count++;
+        navigator = navigator->Next;
     }
-    printf("Impresión de carga al sistema:\n");
-    while (Carga_Al_Sistema[k] != NULL) {
-        printf("Código de la parada: %s\n", Carga_Al_Sistema[k]->Cod);
-        printf("Nombre de la parada: %s\n", Carga_Al_Sistema[k]->Nombre);
-        printf("Ingreso de estudiantes: ");
-        fflush(stdout);
-        for (j = 0; j < MAX_HOURS-1; j++) {
-            printf("%d, ", Carga_Al_Sistema[k]->capacidades[j]);
-            fflush(stdout);
+
+    /*Se crea el arreglo de pipes*/
+    int pipes[route_count][2];
+    
+    /*Se inicializa el semaforo encargado de sincronizar los procesos hijos en el establecimiento de pipes*/
+    if (sem_init(&pipe_sem, 1, 1)) {
+        printf("Error en inicialización de semáforo\n");
+        exit(1);
+    }
+    
+    navigator = Servicio->Head; /*Se usara mas adelante para enviar informacion por los pipes*/
+    for (i = 0; i < route_count; i++) {
+        if (pipe(pipes[i])) {
+            printf("Error en la creación del pipe.\n");
+            exit(1);
         }
-        printf("%d\n", Carga_Al_Sistema[k]->capacidades[MAX_HOURS-1]);
-        k++;
+        int ch_pid = fork();
+        if (ch_pid) {
+            /*Caso del padre*/
+            if (write(pipes[i][WRITE_END], &navigator, sizeof(Service_Node*)) == -1) {
+                printf("Error escribiendo al pipe.\n");
+                exit(1);
+            }
+            close(pipes[i][WRITE_END]);
+            navigator = navigator->Next;
+        } else {
+            /*Caso del hijo*/
+            if (read(pipes[i][READ_END], &my_route, sizeof(Service_Node*)) == -1) {
+                printf("Error leyendo del pipe.\n");
+                exit(1);
+            }
+            break; /*Salirse del ciclo para evitar generar más hijos*/
+        }
+    }
+
+    /*El padre espera a que todos sus hijos terminen para evitar zombies*/
+    while (wait(NULL) > 0) {
+        ;
     }
 
     return 0;
