@@ -259,6 +259,7 @@ int main(int argc, char **argv) {
         }
     }
 
+
     /*El padre espera a que todos sus hijos terminen para evitar zombies*/
     while (wait(NULL) > 0) {
         ;
