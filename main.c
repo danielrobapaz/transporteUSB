@@ -1,5 +1,8 @@
 /**
  * CI3825: Sistemas de Operación
+ * Daniel Robayo
+ * Santiago Finnamore
+ * Valeria Vera Herrera
 */
 
 #define _GNU_SOURCE
@@ -12,12 +15,14 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 #include "Service_List_Functions.h"
 #include "Sch_List_Functions.h"
 #include "Sch_Node.h"
 #include "Service_Node.h"
 #include "Carga.h"
+#include "Route_Data.h"
 
 #define MAX_HOURS 8
 #define MAX_LEN 100
@@ -203,9 +208,9 @@ int main(int argc, char **argv) {
     char* Servicio_Filename = Get_Filename("-s", argc, argv);
     char* Carga_Filename = Get_Filename("-c", argc, argv);
     float tiempo = atof(Get_Filename("-t", argc, argv));
-    int i;
+    int i, Father_PID;
     int route_count;
-    Service_Node *my_route;     /*Apuntador al objeto servicio que le corresponde a cada proceso*/
+    int my_route;     /*Apuntador al objeto servicio que le corresponde a cada proceso*/
     Service_Node *navigator;    /*Variable auxiliar para desplazarse por la lista de servicios*/
 
     int Horarios[MAX_HOURS];
@@ -225,6 +230,19 @@ int main(int argc, char **argv) {
         navigator = navigator->Next;
     }
 
+    Route_Data Routes[route_count];
+    /* Llenamos el servicio y la arga de cada ruta */
+    navigator = Servicio->Head;
+    for (i = 0; i < route_count; i++) {
+        Routes[i].Service = navigator;
+        Routes[i].Carga = Carga_Al_Sistema[i];
+        navigator = navigator->Next;
+    }
+
+    /*array que guardara los pid de los procesos hijos*/
+    int Child_PID[route_count];
+    Father_PID = getpid();
+
     /*Se crea el arreglo de pipes*/
     int pipes[route_count][2];
     
@@ -233,6 +251,7 @@ int main(int argc, char **argv) {
         printf("Error en inicialización de semáforo\n");
         exit(1);
     }
+
     
     navigator = Servicio->Head; /*Se usara mas adelante para enviar informacion por los pipes*/
     for (i = 0; i < route_count; i++) {
@@ -242,8 +261,9 @@ int main(int argc, char **argv) {
         }
         int ch_pid = fork();
         if (ch_pid) {
+            Child_PID[i] = ch_pid;
             /*Caso del padre*/
-            if (write(pipes[i][WRITE_END], &navigator, sizeof(Service_Node*)) == -1) {
+            if (write(pipes[i][WRITE_END], &i, sizeof(int)) == -1) {
                 printf("Error escribiendo al pipe.\n");
                 exit(1);
             }
@@ -251,15 +271,28 @@ int main(int argc, char **argv) {
             navigator = navigator->Next;
         } else {
             /*Caso del hijo*/
-            if (read(pipes[i][READ_END], &my_route, sizeof(Service_Node*)) == -1) {
+            if (read(pipes[i][READ_END], &my_route, sizeof(int)) == -1) {
                 printf("Error leyendo del pipe.\n");
                 exit(1);
             }
             break; /*Salirse del ciclo para evitar generar más hijos*/
         }
     }
+    
+    /* inicio de la simulacion */
+    if (getpid() != Father_PID){
+        Service_Node *Route_Service = Routes[my_route].Service;
+        Sch_List *busses = Route_Service->Service->Schedule;
+        Sch_Node *Curr_Bus = busses->Head;
+        int Num_Busses = 0;
 
+        while (Curr_Bus != NULL) {
+            Num_Busses++;
+            Curr_Bus = Curr_Bus->Next;
+        }
 
+        printf("Ruta %s tiene %d buses \n", Route_Service->Service->Route, Num_Busses);
+    }
     /*El padre espera a que todos sus hijos terminen para evitar zombies*/
     while (wait(NULL) > 0) {
         ;
