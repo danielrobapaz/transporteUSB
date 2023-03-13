@@ -203,6 +203,15 @@ void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
     fclose(fp);
 }
 
+/** 
+ * Funcion que ejecutara cada hilo
+ **/
+void *Bus_Simulation(void *args) {
+    printf("soy un bus\n");
+
+    return NULL;
+}
+
 int main(int argc, char **argv) {
     /* Obtener nombre de los archivos*/
     char* Servicio_Filename = Get_Filename("-s", argc, argv);
@@ -286,12 +295,24 @@ int main(int argc, char **argv) {
         Sch_Node *Curr_Bus = busses->Head;
         int Num_Busses = 0;
 
+        /* Calculamos el numero de autobuses de cada ruta */
         while (Curr_Bus != NULL) {
             Num_Busses++;
             Curr_Bus = Curr_Bus->Next;
         }
 
-        printf("Ruta %s tiene %d buses \n", Route_Service->Service->Route, Num_Busses);
+        /* Creamos cada hilo de cada bus */
+        pthread_t Busses_Threads[Num_Busses];
+        Curr_Bus = busses->Head;
+        for (i = 0; i < Num_Busses; i++) {
+            Curr_Bus = Curr_Bus->Next;
+            pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, NULL);
+        }
+
+        for (i = 0; i < Num_Busses; i++) {
+            pthread_join(Busses_Threads[i], NULL);
+        }
+
     }
     /*El padre espera a que todos sus hijos terminen para evitar zombies*/
     while (wait(NULL) > 0) {
