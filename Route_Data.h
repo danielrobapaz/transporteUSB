@@ -9,6 +9,6 @@
  * Estructura nodo para la lista enlazada de servicios.
 */
 typedef struct Route_Data {
-    struct Service_Node *Service;
+    struct Service_Node *Servicio;
     struct Carga *Carga;
 } Route_Data;

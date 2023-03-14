@@ -207,8 +207,6 @@ void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
  * Funcion que ejecutara cada hilo
  **/
 void *Bus_Simulation(void *args) {
-    printf("soy un bus\n");
-
     return NULL;
 }
 
@@ -243,7 +241,7 @@ int main(int argc, char **argv) {
     /* Llenamos el servicio y la arga de cada ruta */
     navigator = Servicio->Head;
     for (i = 0; i < route_count; i++) {
-        Routes[i].Service = navigator;
+        Routes[i].Servicio = navigator;
         Routes[i].Carga = Carga_Al_Sistema[i];
         navigator = navigator->Next;
     }
@@ -290,9 +288,9 @@ int main(int argc, char **argv) {
     
     /* inicio de la simulacion */
     if (getpid() != Father_PID){
-        Service_Node *Route_Service = Routes[my_route].Service;
-        Sch_List *busses = Route_Service->Service->Schedule;
-        Sch_Node *Curr_Bus = busses->Head;
+        Service *Route_Service = Routes[my_route].Servicio->Service;
+        Sch_Node *Curr_Bus = Route_Service->Schedule->Head;
+
         int Num_Busses = 0;
 
         /* Calculamos el numero de autobuses de cada ruta */
@@ -301,16 +299,24 @@ int main(int argc, char **argv) {
             Curr_Bus = Curr_Bus->Next;
         }
 
+        printf("Ruta %s tiene %d buses\n", Route_Service->Route, Num_Busses);
+
         /* Creamos cada hilo de cada bus */
         pthread_t Busses_Threads[Num_Busses];
-        Curr_Bus = busses->Head;
+        Curr_Bus = Route_Service->Schedule->Head;
         for (i = 0; i < Num_Busses; i++) {
+            if (pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, NULL) != 0) {
+                printf("Error creando hilo\n");
+                exit(1);
+            }
             Curr_Bus = Curr_Bus->Next;
-            pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, NULL);
         }
 
         for (i = 0; i < Num_Busses; i++) {
-            pthread_join(Busses_Threads[i], NULL);
+            if (pthread_join(Busses_Threads[i], NULL) != 0) {
+                printf("Error retornando hilo \n");
+                exit(1);
+            }
         }
 
     }
