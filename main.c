@@ -207,6 +207,12 @@ void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
  * Funcion que ejecutara cada hilo
  **/
 void *Bus_Simulation(void *args) {
+    struct Schedule *sch = (Schedule*)args;
+    struct tm *Time = localtime(&sch->Time);
+    int hour = Time->tm_hour;
+    int min = Time->tm_min;
+    printf("soy un bus con capacidad %d y salgo a las %d:%d\n", sch->Capacity, hour, min);
+
     return NULL;
 }
 
@@ -217,7 +223,7 @@ int main(int argc, char **argv) {
     float tiempo = atof(Get_Filename("-t", argc, argv));
     int i, Father_PID;
     int route_count;
-    int my_route;     /*Apuntador al objeto servicio que le corresponde a cada proceso*/
+    int my_route;               /*Apuntador al objeto servicio que le corresponde a cada proceso*/
     Service_Node *navigator;    /*Variable auxiliar para desplazarse por la lista de servicios*/
 
     int Horarios[MAX_HOURS];
@@ -305,7 +311,7 @@ int main(int argc, char **argv) {
         pthread_t Busses_Threads[Num_Busses];
         Curr_Bus = Route_Service->Schedule->Head;
         for (i = 0; i < Num_Busses; i++) {
-            if (pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, NULL) != 0) {
+            if (pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, (void*)Curr_Bus->Schedule) != 0) {
                 printf("Error creando hilo\n");
                 exit(1);
             }
