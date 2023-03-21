@@ -8,6 +8,8 @@
 #define _GNU_SOURCE
 #define READ_END 0
 #define WRITE_END 1
+#define TRUE 1
+#define FALSE 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +17,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <semaphore.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <pthread.h>
 
 #include "Service_List_Functions.h"
@@ -23,10 +27,14 @@
 #include "Service_Node.h"
 #include "Carga.h"
 #include "Route_Data.h"
+#include "Thread_Bus.h"
 
 #define MAX_HOURS 8
 #define MAX_LEN 100
-sem_t pipe_sem;
+#define REGRESO -1
+#define ESPERANDO 0
+#define IDA 1
+
 
 /**
  * Busca el nombre de un archivo dependiendo de los flags.
@@ -35,7 +43,7 @@ sem_t pipe_sem;
  * -c: carga.csv
  * -t: 0.25
 */
-char* Get_Filename(char* type, int argc, char **argv) {
+char* Get_Argument(char* type, int argc, char **argv) {
     int i = 1;
     int found = 0;
     while (i < argc) {
@@ -207,21 +215,68 @@ void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
  * Funcion que ejecutara cada hilo
  **/
 void *Bus_Simulation(void *args) {
-    struct Schedule *sch = (Schedule*)args;
-    struct tm *Time = localtime(&sch->Time);
-    int hour = Time->tm_hour;
-    int min = Time->tm_min;
-    printf("soy un bus con capacidad %d y salgo a las %d:%d\n", sch->Capacity, hour, min);
 
-    return NULL;
+    /*Se adquiere la informacion recibida como argumento*/
+    struct Thread_Bus my_bus = (struct Thread_Bus*)args;
+
+    if (my_bus->dispatched) {  /*Solo se trabaja con autobuses despachados*/
+        if (my_bus->state == 1) {
+            /*Caso ida a la universidad*/
+            if (my_bus->minutes_on_road == my_bus->trip_duration) {
+                /*Si se llego a la parada se intenta acaparar la parada*/
+                if (!pthread_mutex_trylock(my_bus->parada)) {
+                    my_bus->state = 0; /*Se empieza a esperar*/
+                    while (my_bus->on_board < *(my_bus->Estudiantes_En_Parada) && *(my_bus->Estudiantes_En_Parada) > 0) {
+                        my_bus->on_board++;
+                        *(my_bus->Estudiantes_En_Parada)--; /*Se monta gente en el autobus*/
+                    }
+                }
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            } else {
+                /*Si aun se esta rodando se aumenta el tiempo circulando*/
+                my_bus->minutes_on_road++;
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            }
+        } else if (my_bus->state == 0) {
+            /*Caso esperando en la parada*/
+            if (my_bus->minutes_waited == 10) {
+                my_bus->state = -1; /*Se empieza a volver*/
+                my_bus->minutes_on_road = 0;
+                if (pthread_mutex_unlock(my_bus->parada)) { /*Se libera el mutex en la parada*/
+                    printf("Error liberando mutex.\n");
+                    exit(1);
+                }
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            } else {
+                /*Si aun se esta esperando se aumenta el tiempo en espera*/
+                my_bus->minutes_waited++;
+                /*Se monta a la gente que aun quepa en el autobus*/
+                while (my_bus->on_board < *(my_bus->Estudiantes_En_Parada) && *(my_bus->Estudiantes_En_Parada) > 0) {
+                    my_bus->on_board++;
+                    *(my_bus->Estudiantes_En_Parada)--;
+                }
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            }
+        } else if (my_bus->state == -1) {
+            /*Caso camino de vuelta a la universidad*/
+            if (my_bus->minutes_on_road == my_bus->trip_duration) {
+                /*DESPACHAR GENTE EN LA UNIVERSIDAD*/
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            } else {
+                my_bus->minutes_on_road++;
+                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
+            }
+        }
+    }
+    return NULL; /*Si el autobus no estaba desplegado se retorna NULL*/
 }
 
 int main(int argc, char **argv) {
     /* Obtener nombre de los archivos*/
-    char* Servicio_Filename = Get_Filename("-s", argc, argv);
-    char* Carga_Filename = Get_Filename("-c", argc, argv);
-    float tiempo = atof(Get_Filename("-t", argc, argv));
-    int i, Father_PID;
+    char* Servicio_Filename = Get_Argument("-s", argc, argv);
+    char* Carga_Filename = Get_Argument("-c", argc, argv);
+    float tiempo = atof(Get_Argument("-t", argc, argv));
+    int i, j, Father_PID;
     int route_count;
     int my_route;               /*Apuntador al objeto servicio que le corresponde a cada proceso*/
     Service_Node *navigator;    /*Variable auxiliar para desplazarse por la lista de servicios*/
@@ -246,11 +301,18 @@ int main(int argc, char **argv) {
     Route_Data Routes[route_count];
     /* Llenamos el servicio y la arga de cada ruta */
     navigator = Servicio->Head;
+
+    printf("Antes de iniciar el ciclo\n");
     for (i = 0; i < route_count; i++) {
         Routes[i].Servicio = navigator;
-        Routes[i].Carga = Carga_Al_Sistema[i];
+        for (j = 0; j < route_count; j++) {
+            if (!strcmp(Carga_Al_Sistema[j]->Cod, navigator->Service->Route)) {
+                Routes[i].Carga = Carga_Al_Sistema[j];
+            }
+        }
         navigator = navigator->Next;
     }
+    printf("Despues de terminar el ciclo\n");
 
     /*array que guardara los pid de los procesos hijos*/
     int Child_PID[route_count];
@@ -258,14 +320,7 @@ int main(int argc, char **argv) {
 
     /*Se crea el arreglo de pipes*/
     int pipes[route_count][2];
-    
-    /*Se inicializa el semaforo encargado de sincronizar los procesos hijos en el establecimiento de pipes*/
-    if (sem_init(&pipe_sem, 1, 1)) {
-        printf("Error en inicialización de semáforo\n");
-        exit(1);
-    }
 
-    
     navigator = Servicio->Head; /*Se usara mas adelante para enviar informacion por los pipes*/
     for (i = 0; i < route_count; i++) {
         if (pipe(pipes[i])) {
@@ -291,41 +346,69 @@ int main(int argc, char **argv) {
             break; /*Salirse del ciclo para evitar generar más hijos*/
         }
     }
-    
+
     /* inicio de la simulacion */
     if (getpid() != Father_PID){
         Service *Route_Service = Routes[my_route].Servicio->Service;
-        Sch_Node *Curr_Bus = Route_Service->Schedule->Head;
-
-        int Num_Busses = 0;
+        Sch_Node *Next_Bus = Route_Service->Schedule->Head; /*Apuntador al siguiente autobus que va a departir*/
+        pthread_mutex_t parada; /*Mutex que regula acceso a recoger estudiantes*/
+        time_t current_time = 28800; /*4AM hora Venezuela, por ahora la simulacion va a iniciar a esa hora*/
+        int Num_Busses = 0; 
+        int Camino_Duracion = localtime(Routes[my_route].Carga->Recorr)->tm_min; /*Duracion del recorrido en minutos*/
+        int Next_Student_Load = 0; /*Posicion en el arreglo de carga de la siguiente ola de estudiantes a llegar*/
+        int Done_Busses = 0;
+        int Current_Thread = 0;
+        int Estudiantes_En_Parada = 0;
 
         /* Calculamos el numero de autobuses de cada ruta */
-        while (Curr_Bus != NULL) {
+        while (Next_Bus != NULL) {
             Num_Busses++;
-            Curr_Bus = Curr_Bus->Next;
+            Next_Bus = Next_Bus->Next;
         }
 
-        printf("Ruta %s tiene %d buses\n", Route_Service->Route, Num_Busses);
-
-        /* Creamos cada hilo de cada bus */
+        Next_Bus = Route_Service->Schedule->Head;
+        /*Each bus will be handled by a separate thread*/
+        Thread_Bus Autobuses[Num_Busses];
         pthread_t Busses_Threads[Num_Busses];
-        Curr_Bus = Route_Service->Schedule->Head;
-        for (i = 0; i < Num_Busses; i++) {
-            if (pthread_create(&Busses_Threads[i], NULL, Bus_Simulation, (void*)Curr_Bus->Schedule) != 0) {
-                printf("Error creando hilo\n");
-                exit(1);
-            }
-            Curr_Bus = Curr_Bus->Next;
-        }
 
-        for (i = 0; i < Num_Busses; i++) {
-            if (pthread_join(Busses_Threads[i], NULL) != 0) {
-                printf("Error retornando hilo \n");
-                exit(1);
-            }
-        }
+        /*Ciclo principal de la simulación*/
+        while (Done_Busses < Num_Busses) {
+            /*Si a esta hora sale algún autobus, sale el autobus apuntado por Next_Bus con el hilo Current_Thread*/
+            if (localtime(current_time)->tm_hour == localtime(Next_Bus->Schedule->Time)->tm_hour
+            && localtime(current_time)->tm_min == localtime(Next_Bus->Schedule->Time)->tm_min) {
+                /*Se genera el objeto Thread_Bus que funcionara como argumento del procedimiento*/
+                Autobuses[Current_Thread].dispatched = 1;
+                Autobuses[Current_Thread].state = 1;
+                Autobuses[Current_Thread].minutes_on_road = 0;
+                Autobuses[Current_Thread].minutes_waited = 0;
+                Autobuses[Current_Thread].capacity = Next_Bus->Schedule->Capacity;
+                Autobuses[Current_Thread].on_board = 0;
+                Autobuses[Current_Thread].parada = &parada;
+                Autobuses[Current_Trhead].Estudiantes_En_Parada = &Estudiantes_En_Parada;
+                Autobuses[Current_Thread].done = 0;
 
+                /*Se mueve al siguiente hilo y autobus a despachar*/
+                Next_Bus = Next_Bus->Next;
+                Current_Thread++;
+            }
+
+            /*Se llama la funcion de thread para cada autobus*/
+            for (j = 0; j < Num_Busses; j++) {
+                if (pthread_create(&Busses_Threads[j], Bus_Simulation, &Autobuses[j])) {
+                    printf("Error durante la creación de hilo.\n");
+                    exit(1);
+                }
+            }
+
+            /*PARTE DONDE EL PROCESO HIJO ENVIA INFORMACION RELEVANTE DE TODOS LOS AUTOBUSES AL PROCESO PADRE*/
+        }
+    } else {
+        /*Parte del padre*/
+
+        /*EL PADRE RECIBE LA INFORMACION ENVIADA POR SUS HIJOS Y SINCRONIZA LA EJECUCION DEPENDIENDO DE LA HORA*/
     }
+
+
     /*El padre espera a que todos sus hijos terminen para evitar zombies*/
     while (wait(NULL) > 0) {
         ;
