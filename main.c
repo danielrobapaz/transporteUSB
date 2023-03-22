@@ -347,8 +347,41 @@ int main(int argc, char **argv) {
         }
     }
 
+    /*  
+    semaforo: s = 0
+    while (simulacion) {
+        if (hijo) {
+            for i in 0..nBuses {
+                crearHilo(i, bus[i])
+            }
+
+            arr = [0..nBuses)
+            for i in 0..nBuses {
+                cerrarHilo(i, return)
+                arr[i] = return
+            }
+
+            pipeEscribir(padre, arr)
+            s++
+        } else {
+            res = [0..nRutas)[0..maxBuses)
+            for i in 0..nrutas {
+                pipeLeer(i, res[i])
+            }
+
+            output(res)
+            
+            for (cada bus) {
+                s--
+            }
+        }
+
+        wait(s == 0)
+    }
+    
+    */
     /* inicio de la simulacion */
-    if (getpid() != Father_PID){
+    if (getpid() != Father_PID) {
         Service *Route_Service = Routes[my_route].Servicio->Service;
         Sch_Node *Next_Bus = Route_Service->Schedule->Head; /*Apuntador al siguiente autobus que va a departir*/
         pthread_mutex_t parada; /*Mutex que regula acceso a recoger estudiantes*/
@@ -384,7 +417,7 @@ int main(int argc, char **argv) {
                 Autobuses[Current_Thread].capacity = Next_Bus->Schedule->Capacity;
                 Autobuses[Current_Thread].on_board = 0;
                 Autobuses[Current_Thread].parada = &parada;
-                Autobuses[Current_Trhead].Estudiantes_En_Parada = &Estudiantes_En_Parada;
+                Autobuses[Current_Thread].Estudiantes_En_Parada = &Estudiantes_En_Parada;
                 Autobuses[Current_Thread].done = 0;
 
                 /*Se mueve al siguiente hilo y autobus a despachar*/
