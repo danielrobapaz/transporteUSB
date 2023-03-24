@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <sys/mman.h>
 
 #include "Service_List_Functions.h"
 #include "Sch_List_Functions.h"
@@ -28,13 +29,19 @@
 #include "Carga.h"
 #include "Route_Data.h"
 #include "Thread_Bus.h"
+#include "Thread_Return.h"
 
 #define MAX_HOURS 8
 #define MAX_LEN 100
-#define REGRESO -1
-#define ESPERANDO 0
-#define IDA 1
 
+
+/**
+ * Funcion que recibe un numero de milisegundos durante los cuales el proceso llamante va a dormir.
+ * En caso de error retorna -1.
+*/
+int milli_sleep(int m_time) {
+    return usleep(m_time*1000);
+}
 
 /**
  * Busca el nombre de un archivo dependiendo de los flags.
@@ -217,7 +224,7 @@ void add_Carga(char filename[], struct Carga *carga[], int *horarios) {
 void *Bus_Simulation(void *args) {
 
     /*Se adquiere la informacion recibida como argumento*/
-    struct Thread_Bus my_bus = (struct Thread_Bus*)args;
+    Thread_Bus *my_bus = (Thread_Bus *) args;
 
     if (my_bus->dispatched) {  /*Solo se trabaja con autobuses despachados*/
         if (my_bus->state == 1) {
@@ -231,11 +238,9 @@ void *Bus_Simulation(void *args) {
                         *(my_bus->Estudiantes_En_Parada)--; /*Se monta gente en el autobus*/
                     }
                 }
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             } else {
                 /*Si aun se esta rodando se aumenta el tiempo circulando*/
                 my_bus->minutes_on_road++;
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             }
         } else if (my_bus->state == 0) {
             /*Caso esperando en la parada*/
@@ -246,7 +251,6 @@ void *Bus_Simulation(void *args) {
                     printf("Error liberando mutex.\n");
                     exit(1);
                 }
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             } else {
                 /*Si aun se esta esperando se aumenta el tiempo en espera*/
                 my_bus->minutes_waited++;
@@ -255,30 +259,39 @@ void *Bus_Simulation(void *args) {
                     my_bus->on_board++;
                     *(my_bus->Estudiantes_En_Parada)--;
                 }
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             }
         } else if (my_bus->state == -1) {
             /*Caso camino de vuelta a la universidad*/
             if (my_bus->minutes_on_road == my_bus->trip_duration) {
                 /*DESPACHAR GENTE EN LA UNIVERSIDAD*/
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             } else {
                 my_bus->minutes_on_road++;
-                return NULL; /*RETORNAR INFORMACION RELEVANTE*/
             }
         }
+        return NULL;
     }
-    return NULL; /*Si el autobus no estaba desplegado se retorna NULL*/
+    return NULL;
 }
 
+
+/*############################################################################MAIN############################################################################################################*/
 int main(int argc, char **argv) {
-    /* Obtener nombre de los archivos*/
-    char* Servicio_Filename = Get_Argument("-s", argc, argv);
+
+    /*VARIABLES DESTINADAS A OBTENCIÓN DE INFORMACIÓN GLOBAL*/
+    char* Servicio_Filename = Get_Argument("-s", argc, argv); /* Obtener nombre de los archivos*/
     char* Carga_Filename = Get_Argument("-c", argc, argv);
     float tiempo = atof(Get_Argument("-t", argc, argv));
+    int time_delta = (int)tiempo*1000; /*cantidad de milisegundos que dura una iteracion*/
     int i, j, Father_PID;
     int route_count;
     int my_route;               /*Apuntador al objeto servicio que le corresponde a cada proceso*/
+    /*Se desvinculan los semaforos en caso de que existan*/
+    sem_unlink("parent_to_children");
+    sem_unlink("children_to_parent");
+    sem_unlink("write");
+    sem_t *parent_to_children = sem_open("parent_to_children", O_CREAT, 0644, 0);
+    sem_t *children_to_parent = sem_open("children_to_parent", O_CREAT, 0644, 0); /*Semaforos para coordinacion*/
+    sem_t *write_to_sh_mem = sem_open("write", O_CREAT, 0644, 1);
     Service_Node *navigator;    /*Variable auxiliar para desplazarse por la lista de servicios*/
 
     int Horarios[MAX_HOURS];
@@ -298,11 +311,21 @@ int main(int argc, char **argv) {
         navigator = navigator->Next;
     }
 
-    Route_Data Routes[route_count];
+    Route_Data Routes[route_count]; 
+
+    Thread_Bus *Autobuses = (Thread_Bus *) mmap(NULL, (sizeof(Thread_Bus))*(route_count*50), 
+    PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0); /*Arreglo que se llevara a memoria compartida para ser modificado por los hilos y leido por el padre*/
+
+    for (i = 0; i < route_count*50; i++) {
+        Autobuses[i].dispatched = 0;
+    }
+
+    int *paradas = mmap(NULL, sizeof(int)*route_count, 
+    PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
     /* Llenamos el servicio y la arga de cada ruta */
     navigator = Servicio->Head;
 
-    printf("Antes de iniciar el ciclo\n");
     for (i = 0; i < route_count; i++) {
         Routes[i].Servicio = navigator;
         for (j = 0; j < route_count; j++) {
@@ -312,10 +335,8 @@ int main(int argc, char **argv) {
         }
         navigator = navigator->Next;
     }
-    printf("Despues de terminar el ciclo\n");
 
     /*array que guardara los pid de los procesos hijos*/
-    int Child_PID[route_count];
     Father_PID = getpid();
 
     /*Se crea el arreglo de pipes*/
@@ -329,7 +350,6 @@ int main(int argc, char **argv) {
         }
         int ch_pid = fork();
         if (ch_pid) {
-            Child_PID[i] = ch_pid;
             /*Caso del padre*/
             if (write(pipes[i][WRITE_END], &i, sizeof(int)) == -1) {
                 printf("Error escribiendo al pipe.\n");
@@ -347,39 +367,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    /*  
-    semaforo: s = 0
-    while (simulacion) {
-        if (hijo) {
-            for i in 0..nBuses {
-                crearHilo(i, bus[i])
-            }
 
-            arr = [0..nBuses)
-            for i in 0..nBuses {
-                cerrarHilo(i, return)
-                arr[i] = return
-            }
-
-            pipeEscribir(padre, arr)
-            s++
-        } else {
-            res = [0..nRutas)[0..maxBuses)
-            for i in 0..nrutas {
-                pipeLeer(i, res[i])
-            }
-
-            output(res)
-            
-            for (cada bus) {
-                s--
-            }
-        }
-
-        wait(s == 0)
-    }
-    
-    */
     /* inicio de la simulacion */
     if (getpid() != Father_PID) {
         Service *Route_Service = Routes[my_route].Servicio->Service;
@@ -387,11 +375,12 @@ int main(int argc, char **argv) {
         pthread_mutex_t parada; /*Mutex que regula acceso a recoger estudiantes*/
         time_t current_time = 28800; /*4AM hora Venezuela, por ahora la simulacion va a iniciar a esa hora*/
         int Num_Busses = 0; 
-        int Camino_Duracion = localtime(Routes[my_route].Carga->Recorr)->tm_min; /*Duracion del recorrido en minutos*/
+        int Camino_Duracion = localtime(Routes[my_route].Carga->Recorr)->tm_min + (localtime(Routes[my_route].Carga->Recorr)->tm_hour*60); /*Duracion del recorrido en minutos*/
+        printf("Hola, mi ruta es %s y mi ruta dura %d min\n", Route_Service->Route, Camino_Duracion);
         int Next_Student_Load = 0; /*Posicion en el arreglo de carga de la siguiente ola de estudiantes a llegar*/
         int Done_Busses = 0;
         int Current_Thread = 0;
-        int Estudiantes_En_Parada = 0;
+        int start_index = 100*my_route;     /*Indice donde comienzan los objetos de tipo Thread_Bus que le pertenecen al proceso en Autobuses.*/
 
         /* Calculamos el numero de autobuses de cada ruta */
         while (Next_Bus != NULL) {
@@ -400,47 +389,98 @@ int main(int argc, char **argv) {
         }
 
         Next_Bus = Route_Service->Schedule->Head;
-        /*Each bus will be handled by a separate thread*/
-        Thread_Bus Autobuses[Num_Busses];
-        pthread_t Busses_Threads[Num_Busses];
+        pthread_t Threads[Num_Busses];  /*Hilos pertenecientes al proceso hijo*/
+        sem_wait(write_to_sh_mem);
+        Autobuses[start_index + Num_Busses].dispatched = -1; /*Marca para el proceso padre*/
+        sem_post(write_to_sh_mem);
+
 
         /*Ciclo principal de la simulación*/
-        while (Done_Busses < Num_Busses) {
+        while (1) {
+            /*Si a la hora actual llega gente a la parada se suma el valor a Estudiantes_En_Parada*/
+            if (localtime(&current_time)->tm_min == 0 && localtime(&current_time)->tm_hour == 6 + Next_Student_Load) {
+                paradas[my_route] += Routes[my_route].Carga->capacidades[Next_Student_Load];
+                Next_Student_Load++;
+            }
             /*Si a esta hora sale algún autobus, sale el autobus apuntado por Next_Bus con el hilo Current_Thread*/
-            if (localtime(current_time)->tm_hour == localtime(Next_Bus->Schedule->Time)->tm_hour
-            && localtime(current_time)->tm_min == localtime(Next_Bus->Schedule->Time)->tm_min) {
+            if (localtime(&current_time)->tm_hour == localtime(&(Next_Bus->Schedule->Time))->tm_hour
+            && localtime(&current_time)->tm_min == localtime(&(Next_Bus->Schedule->Time))->tm_min) {
                 /*Se genera el objeto Thread_Bus que funcionara como argumento del procedimiento*/
-                Autobuses[Current_Thread].dispatched = 1;
-                Autobuses[Current_Thread].state = 1;
-                Autobuses[Current_Thread].minutes_on_road = 0;
-                Autobuses[Current_Thread].minutes_waited = 0;
-                Autobuses[Current_Thread].capacity = Next_Bus->Schedule->Capacity;
-                Autobuses[Current_Thread].on_board = 0;
-                Autobuses[Current_Thread].parada = &parada;
-                Autobuses[Current_Thread].Estudiantes_En_Parada = &Estudiantes_En_Parada;
-                Autobuses[Current_Thread].done = 0;
+                sem_wait(write_to_sh_mem);
+                Autobuses[Current_Thread + start_index].dispatched = 1;
+                Autobuses[Current_Thread + start_index].state = 1;
+                Autobuses[Current_Thread + start_index].minutes_on_road = 0;
+                Autobuses[Current_Thread + start_index].minutes_waited = 0;
+                Autobuses[Current_Thread + start_index].capacity = Next_Bus->Schedule->Capacity;
+                Autobuses[Current_Thread + start_index].on_board = 0;
+                Autobuses[Current_Thread + start_index].parada = &parada;
+                Autobuses[Current_Thread + start_index].Estudiantes_En_Parada = &paradas[my_route];
+                Autobuses[Current_Thread + start_index].done = 0;
+                sem_post(write_to_sh_mem);
 
                 /*Se mueve al siguiente hilo y autobus a despachar*/
                 Next_Bus = Next_Bus->Next;
                 Current_Thread++;
             }
-
             /*Se llama la funcion de thread para cada autobus*/
-            for (j = 0; j < Num_Busses; j++) {
-                if (pthread_create(&Busses_Threads[j], Bus_Simulation, &Autobuses[j])) {
+            for (i = 0; i < Num_Busses; i++) {
+                if (pthread_create(&Threads[i], NULL, &Bus_Simulation, &Autobuses[start_index + i])) {
                     printf("Error durante la creación de hilo.\n");
                     exit(1);
                 }
             }
 
+            /*Se hace join a los threads enviados*/
+            for (i = 0; i < Num_Busses; i++) {
+                if (pthread_join(Threads[i], NULL)) {       /*Las modificaciones estan almacenadas en el objeto modificado por el hilo*/
+                    printf("Error haciendo join de thread.\n");
+                    exit(1);
+                }
+            }
+
+            current_time += 60;
+            sem_post(children_to_parent);   /*Se indica al padre que este proceso ya termino su iteracion*/
+            sem_wait(parent_to_children);   /*Se espera a que el padre de permiso de pasar a la siguiente iteracion*/
+
+
             /*PARTE DONDE EL PROCESO HIJO ENVIA INFORMACION RELEVANTE DE TODOS LOS AUTOBUSES AL PROCESO PADRE*/
         }
     } else {
-        /*Parte del padre*/
+        time_t current_time_parent = 28800;
+        while (1) {
+            for (i = 0; i < route_count; i++) {
+                sem_wait(children_to_parent);   /*Se espera a que todos los hijos hayan terminado sus iteraciones*/
+            }
+            printf("Done waiting.\n");
+            for (i = 0; i < route_count; i++) {
+                j = 0;
+                
+                system("clear");  /*limpiar pantalla*/
+                /*printf("%s: %d", Routes[i].Servicio->Service->Route, paradas[i]);*/
+                fflush(stdout);
+                while (Autobuses[(100*i) + j].dispatched != -1) {
+                    if (Autobuses[(100*i) + j].dispatched == 1) {
+                        printf("%d, ", Autobuses[j].minutes_on_road);
+                        fflush(stdout);
+                    }
+                    j++;
+                }
+                printf("\n");
+            }
 
-        /*EL PADRE RECIBE LA INFORMACION ENVIADA POR SUS HIJOS Y SINCRONIZA LA EJECUCION DEPENDIENDO DE LA HORA*/
+            current_time_parent += 60;
+            if (milli_sleep(time_delta)) {
+                printf("Error durmiendo.\n");
+                exit(1);
+            }
+
+            for (i = 0; i < route_count; i++) {
+                sem_post(parent_to_children); /*Dar el visto bueno a los hijos de pasar a la siguiente iteracion*/
+            }
+
+        }
+        
     }
-
 
     /*El padre espera a que todos sus hijos terminen para evitar zombies*/
     while (wait(NULL) > 0) {
