@@ -6,7 +6,7 @@
 */
 
 /**
- * Estructura para la lista enlazada de la tabla de hash.
+ * Estructura para la lista enlazada.
  * Almacena un puntero apuntando al nodo cabeza de la cola y otro
  * apuntando al nodo cola de la misma.
 */
